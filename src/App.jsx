@@ -1,0 +1,985 @@
+import React, { useEffect, useState } from 'react';
+import { supabase } from './supabaseClient';
+import { Activity, ShieldAlert, Coins, RefreshCw, ExternalLink, Layers, Plus, Filter, Zap, Pen, Edit, Settings, ChevronDown, ChevronUp, Twitter, Globe, Copy, MessageCircle, Send } from 'lucide-react';
+import { CreateStrategyModal } from './CreateStrategyModal';
+import { CustomFilterModal } from './CustomFilterModal';
+import { BotSettingsModal } from './BotSettingsModal';
+import { BotActivityLog } from './BotActivityLog';
+import { generateDexScreenerUrl } from './utils/dexscreener';
+
+// Helper for detailed time ago (e.g., "1 month and 4 days ago")
+function formatDetailedTimeAgo(timestamp) {
+  if (!timestamp) return 'N/A';
+  const now = Date.now();
+  const diff = now - timestamp;
+
+  const minute = 60 * 1000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+  const month = 30 * day;
+  const year = 365 * day;
+
+  if (diff < minute) return 'Just now';
+
+  if (diff < hour) {
+    const min = Math.floor(diff / minute);
+    return `${min} min ago`;
+  }
+
+  if (diff < day) {
+    const hrs = Math.floor(diff / hour);
+    const mins = Math.floor((diff % hour) / minute);
+    if (mins === 0) return `${hrs} hours ago`;
+    return `${hrs} hours and ${mins} min ago`;
+  }
+
+  if (diff < month) {
+    const days = Math.floor(diff / day);
+    const hrs = Math.floor((diff % day) / hour);
+    if (hrs === 0) return `${days} days ago`;
+    return `${days} days and ${hrs} hours ago`;
+  }
+
+  if (diff < year) {
+    const months = Math.floor(diff / month);
+    const days = Math.floor((diff % month) / day);
+    if (days === 0) return `${months} months ago`;
+    return `${months} months and ${days} days ago`;
+  }
+
+  const years = Math.floor(diff / year);
+  const months = Math.floor((diff % year) / month);
+  if (months === 0) return `${years} years ago`;
+  return `${years} years and ${months} months ago`;
+}
+
+// ...
+
+function App() {
+  const [tokens, setTokens] = useState([]);
+  const [strategies, setStrategies] = useState([]);
+  const [dexIcons, setDexIcons] = useState({}); // Mapping of id -> { url, name }
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [customFilters, setCustomFilters] = useState([]);
+  const [savedViews, setSavedViews] = useState([]);
+  const [activeViewId, setActiveViewId] = useState('all');
+  const [viewName, setViewName] = useState('');
+  const [isSavingView, setIsSavingView] = useState(false);
+  const [showRunConfirm, setShowRunConfirm] = useState(false);
+  const [stratToRun, setStratToRun] = useState(null);
+  const [botSettings, setBotSettings] = useState(null);
+
+  // State for Editing
+  const [strategyToEdit, setStrategyToEdit] = useState(null);
+
+  // Selection State
+  const [selectedStratId, setSelectedStratId] = useState(null);
+  const [activeCategory, setActiveCategory] = useState('all'); // 'all', 'safe', 'degen'
+  const [expandedToken, setExpandedToken] = useState(null);
+  const [tokenMetadata, setTokenMetadata] = useState({}); // Cache for metadata
+  const [metaLoading, setMetaLoading] = useState({}); // Loading state per token
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedStratId, activeCategory, customFilters]);
+
+  // Handler for opening modal
+  const handleOpenModal = (strat = null) => {
+    setStrategyToEdit(strat);
+    setShowModal(true);
+  };
+
+  // Fetch Initial Data
+  useEffect(() => {
+    fetchData();
+
+    // Realtime Subscription
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on('postgres_changes', { event: '*', schema: 'public' }, (payload) => {
+        fetchData();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  async function fetchData() {
+    // 1. Fetch live metrics joined with static token data
+    const { data: tokenData, error: tokenError } = await supabase
+      .from('active_tokens')
+      .select(`
+        *,
+        dex_age,
+        tokens (
+          contract_address,
+          symbol,
+          token_name,
+          logo_url
+        )
+      `)
+      .order('last_scraped_at', { ascending: false });
+
+    if (tokenError) console.error("Token Fetch Error:", tokenError);
+    if (tokenData) setTokens(tokenData);
+
+    const { data: stratData } = await supabase.from('filter_configs').select('*').order('created_at', { ascending: false });
+    if (stratData) {
+      setStrategies(stratData);
+      if (!selectedStratId && stratData.length > 0) {
+        setSelectedStratId(stratData[0].id);
+      }
+    }
+
+    const { data: iconData } = await supabase.from('dex_icons').select('*');
+    if (iconData) {
+      const mapping = iconData.reduce((acc, icon) => {
+        acc[icon.id] = icon;
+        return acc;
+      }, {});
+      setDexIcons(mapping);
+    }
+
+    const { data: viewData } = await supabase.from('saved_views').select('*');
+    if (viewData) setSavedViews(viewData);
+
+    const { data: settingsData } = await supabase.from('bot_settings').select('*').single();
+    if (settingsData) setBotSettings(settingsData);
+
+    setLoading(false);
+  }
+
+  // Metadata Fetching Logic
+  const fetchTokenMetadata = async (token) => {
+    const address = token.tokens.contract_address;
+    if (!address) return;
+
+    // Check Cache
+    const CACHE_KEY = `meta_${address}`;
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        const now = Date.now();
+        // 1 hour cache
+        if (now - parsed.timestamp < 3600 * 1000) {
+          setTokenMetadata(prev => ({ ...prev, [address]: parsed.data }));
+          return;
+        }
+      } catch (e) {
+        console.error("Cache parse error", e);
+      }
+    }
+
+    // Fetch from API
+    setMetaLoading(prev => ({ ...prev, [address]: true }));
+    try {
+      const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${address}`);
+      const data = await res.json();
+
+      if (data.pairs && data.pairs.length > 0) {
+        const pairInfo = data.pairs[0].info || {};
+        const meta = {
+          websites: pairInfo.websites || [],
+          socials: pairInfo.socials || [],
+          header: pairInfo.header,
+          pairCreatedAt: data.pairs[0].pairCreatedAt
+        };
+
+        // Save to Cache
+        localStorage.setItem(CACHE_KEY, JSON.stringify({
+          timestamp: Date.now(),
+          data: meta
+        }));
+
+        setTokenMetadata(prev => ({ ...prev, [address]: meta }));
+      }
+    } catch (err) {
+      console.error("Metadata fetch error:", err);
+    } finally {
+      setMetaLoading(prev => ({ ...prev, [address]: false }));
+    }
+  };
+
+  const handleToggleExpand = (token) => {
+    if (expandedToken === token.token_id) {
+      setExpandedToken(null);
+    } else {
+      setExpandedToken(token.token_id);
+      fetchTokenMetadata(token);
+    }
+  };
+
+  const handleManualRefresh = async (e, tokenId) => {
+    e.stopPropagation();
+    try {
+      await supabase
+        .from('active_tokens')
+        .update({ force_holder_refresh: true })
+        .eq('token_id', tokenId);
+    } catch (err) {
+      console.error("Refresh Trigger Error:", err);
+    }
+  };
+
+  // Filter Logic
+  const filteredTokens = tokens.filter(t => {
+    // 1. Must match selected strategy
+    if (selectedStratId && t.strategy_id !== selectedStratId) return false;
+
+    // 2. Custom Filters
+    for (const f of customFilters) {
+      let val;
+      if (f.field === 'mcap') val = t.mcap;
+      else if (f.field === 'liquidity') val = t.liquidity;
+      else if (f.field === 'volume') val = t.volume;
+      else if (f.field === 'change_h24') val = t.change_h24;
+      else if (f.field === 'holders') val = t.holders;
+      else if (f.field === 'price') val = t.price;
+
+      if (val === undefined || val === null) return false;
+
+      if (f.operator === '>' && !(val > f.value)) return false;
+      if (f.operator === '<' && !(val < f.value)) return false;
+      if (f.operator === '==' && !(val == f.value)) return false;
+    }
+
+    return true;
+  }).sort((a, b) => {
+    const rankA = a.dex_rank || 999;
+    const rankB = b.dex_rank || 999;
+    return rankA - rankB;
+  });
+
+  const handleSaveView = async () => {
+    if (!viewName.trim() || customFilters.length === 0) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('saved_views')
+        .insert({
+          name: viewName,
+          filters: customFilters,
+          strategy_id: selectedStratId
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      setSavedViews(prev => [...prev, data]);
+      setActiveViewId(data.id);
+      setIsSavingView(false);
+      setViewName('');
+    } catch (err) {
+      console.error("Save View Error:", err);
+    }
+  };
+
+  const deleteView = async (e, id) => {
+    e.stopPropagation();
+    try {
+      await supabase.from('saved_views').delete().eq('id', id);
+      setSavedViews(prev => prev.filter(v => v.id !== id));
+      if (activeViewId === id) {
+        setActiveViewId('all');
+        setCustomFilters([]);
+      }
+    } catch (err) {
+      console.error("Delete View Error:", err);
+    }
+  };
+
+  const selectView = (view) => {
+    if (view === 'all') {
+      setActiveViewId('all');
+      setCustomFilters([]);
+    } else {
+      setActiveViewId(view.id);
+      setCustomFilters(view.filters);
+    }
+  };
+
+  const removeFilterCondition = (index) => {
+    setCustomFilters(prev => prev.filter((_, i) => i !== index));
+    // If we're on a saved view but modify it, we essentially "detach" from the view ID 
+    // or we mark it as unsaved. For now, let's keep the ID but the Save button will appear later.
+  };
+
+  const isViewModified = () => {
+    if (activeViewId === 'all') return customFilters.length > 0;
+    const original = savedViews.find(v => v.id === activeViewId);
+    if (!original) return false;
+    return JSON.stringify(original.filters) !== JSON.stringify(customFilters);
+  };
+
+  const toggleStrategyActive = async (strat) => {
+    setStratToRun(strat);
+    setShowRunConfirm(true);
+  };
+
+  const performToggle = async (id, newState) => {
+    try {
+      const { error } = await supabase
+        .from('filter_configs')
+        .update({ is_active: newState })
+        .eq('id', id);
+      if (error) throw error;
+      setStrategies(prev => prev.map(s => s.id === id ? { ...s, is_active: newState } : s));
+      setShowRunConfirm(false);
+    } catch (err) {
+      console.error("Toggle Strategy Error:", err);
+    }
+  };
+
+  const formatCurrency = (num) => {
+    if (!num) return '$0.00';
+    if (num < 1) return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 6 }).format(num);
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(num);
+  };
+  const isBotOnline = () => {
+    if (!botSettings?.last_heartbeat) return false;
+    const last = new Date(botSettings.last_heartbeat);
+    const now = new Date();
+    // If heartbeat was within last 90 seconds, consider online
+    return (now - last) < 90000;
+  };
+
+  const formatMcap = (num) => {
+    if (!num) return '$0';
+    if (num >= 1000000000) return `$${(num / 1000000000).toFixed(2)}B`;
+    if (num >= 1000000) return `$${(num / 1000000).toFixed(2)}M`;
+    if (num >= 1000) return `$${(num / 1000).toFixed(1)}K`;
+    return `$${num.toFixed(0)}`;
+  };
+
+  const formatNumber = (num) => {
+    if (!num) return '0';
+    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+    return num.toString();
+  };
+
+  const formatPct = (num) => {
+    if (num === undefined || num === null) return '0%';
+    const color = num >= 0 ? '#10b981' : '#ef4444';
+    const sign = num >= 0 ? '+' : '';
+    return <span style={{ color, fontWeight: 500 }}>{sign}{num.toFixed(2)}%</span>;
+  };
+
+  const formatAgeCol = (ageStr) => {
+    if (!ageStr) return { text: 'N/A', color: '#888' };
+    const age = ageStr.toLowerCase();
+    let color = '#ccc';
+
+    const isRecent = (age.endsWith('m') || age.endsWith('h') || age.endsWith('s')) && !age.includes('mo');
+
+    if (isRecent) {
+      color = '#10b981'; // Green for < 24h
+    } else if (age.endsWith('d')) {
+      const days = parseInt(age);
+      if (days >= 7) color = '#ef4444'; // Red for > 7d
+    } else if (age.includes('mo') || age.includes('y')) {
+      color = '#ef4444'; // Month+ is also > 7d
+    }
+
+    return { text: ageStr, color };
+  };
+
+  const formatTimeAgo = (at) => {
+    if (!at) return '';
+    const date = new Date(at);
+    const now = new Date();
+    const diff = Math.floor((now - date) / 1000);
+
+    if (diff < 60) return `${diff}s ago`;
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return `${Math.floor(diff / 86400)}d ago`;
+  };
+
+  const totalPages = Math.ceil(filteredTokens.length / itemsPerPage);
+  const paginatedTokens = filteredTokens.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  return (
+    <div className="app-container">
+      {showModal && (
+        <CreateStrategyModal
+          onClose={() => setShowModal(false)}
+          onCreated={fetchData}
+          initialData={strategyToEdit}
+        />
+      )}
+
+      {showFilterModal && (
+        <CustomFilterModal
+          onClose={() => setShowFilterModal(false)}
+          onAdd={(newFilter) => setCustomFilters(prev => [...prev, newFilter])}
+        />
+      )}
+
+      {showSettingsModal && (
+        <BotSettingsModal onClose={() => setShowSettingsModal(false)} />
+      )}
+
+      {/* Navbar */}
+      <nav style={{ padding: '16px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--glass-border)', background: '#0a0a0b' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ background: 'var(--primary-gradient)', padding: '6px', borderRadius: '6px', display: 'flex' }}>
+            <Zap color="white" size={20} />
+          </div>
+          <div>
+            <h1 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '700', letterSpacing: '0.5px' }}>SOLANA SNIPER</h1>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          {/* BOT STATUS BADGE */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            background: 'rgba(255,255,255,0.03)',
+            padding: '6px 12px',
+            borderRadius: '20px',
+            border: '1px solid rgba(255,255,255,0.06)'
+          }}>
+            <div style={{
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              background: isBotOnline() ? '#10b981' : '#ef4444',
+              boxShadow: isBotOnline() ? '0 0 10px #10b981' : '0 0 10px #ef4444'
+            }} />
+            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: isBotOnline() ? '#10b981' : '#ef4444' }}>
+              BOT: {isBotOnline() ? 'ONLINE' : 'OFFLINE'}
+            </span>
+          </div>
+
+          <button
+            onClick={() => setShowSettingsModal(true)}
+            style={{ padding: '8px 16px', background: '#1a1a1a', border: '1px solid #333', color: '#ccc', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}
+            title="Bot Settings"
+          >
+            <Settings size={16} />
+          </button>
+          <button className="btn-primary" onClick={() => handleOpenModal(null)} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}>
+            <Plus size={16} /> New Strategy
+          </button>
+        </div>
+      </nav>
+
+      <main style={{ padding: '32px' }}>
+        {/* ROW 1: STATS & LOGS */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 400px', gap: '24px', marginBottom: '32px' }}>
+          {/* ROW 1: STRATEGIES */}
+          <div className="glass-card" style={{ padding: '20px', marginBottom: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+              <Activity size={20} style={{ color: '#00C6FF' }} />
+              <h2 style={{ fontSize: '1.1rem', margin: 0, fontWeight: 600 }}>Active Strategies</h2>
+              <span style={{ fontSize: '0.75rem', color: '#666', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: '10px' }}>
+                {strategies.length} Total
+              </span>
+              <button
+                onClick={() => { setStrategyToEdit(null); setShowModal(true); }}
+                className="btn-icon-small"
+                style={{ marginLeft: 'auto', width: '28px', height: '28px' }}
+              >
+                <Plus size={16} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              {strategies.map(strat => (
+                <div key={strat.id} style={{ display: 'flex', flexDirection: 'column', gap: '8px', minWidth: '200px' }}>
+                  <button
+                    onClick={() => setSelectedStratId(selectedStratId === strat.id ? null : strat.id)}
+                    className={`filter-btn ${selectedStratId === strat.id ? 'active' : ''}`}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '12px 16px',
+                      borderColor: strat.is_active ? 'rgba(16, 185, 129, 0.3)' : '#333'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{
+                        width: '6px',
+                        height: '6px',
+                        borderRadius: '50%',
+                        background: strat.is_active ? '#10b981' : '#666',
+                        boxShadow: strat.is_active ? '0 0 8px #10b981' : 'none'
+                      }} />
+                      <span>{strat.name}</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <Edit size={12} onClick={(e) => { e.stopPropagation(); setStrategyToEdit(strat); setShowModal(true); }} />
+                    </div>
+                  </button>
+
+                  {selectedStratId === strat.id && (
+                    <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: '8px', padding: '12px', border: '1px solid #333' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                        <span style={{ fontSize: '0.75rem', color: strat.is_active ? '#10b981' : '#ef4444', fontWeight: 600 }}>
+                          {strat.is_active ? 'RUNNING' : 'PAUSED'}
+                        </span>
+                        {!strat.is_active ? (
+                          <button
+                            onClick={() => toggleStrategyActive(strat)}
+                            className="btn-primary"
+                            style={{ padding: '2px 10px', fontSize: '0.7rem' }}
+                          >
+                            RUN
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => toggleStrategyActive(strat)}
+                            style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid #ef4444', borderRadius: '4px', padding: '2px 10px', fontSize: '0.7rem', cursor: 'pointer' }}
+                          >
+                            STOP
+                          </button>
+                        )}
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <span style={{ fontSize: '0.7rem', color: '#666', borderBottom: '1px solid #222', paddingBottom: '2px' }}>DEXSCREENER PARAMS</span>
+                        {Object.entries(strat.dexscreener_params).map(([k, v]) => (
+                          <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+                            <span style={{ color: '#888' }}>{k}</span>
+                            <span style={{ color: '#00C6FF' }}>{v.toString()}</span>
+                          </div>
+                        ))}
+
+                        <span style={{ fontSize: '0.7rem', color: '#666', borderBottom: '1px solid #222', paddingBottom: '2px', marginTop: '8px' }}>PROCESSING RULES</span>
+                        {Object.entries(strat.processing_rules).map(([k, v]) => (
+                          <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+                            <span style={{ color: '#888' }}>{k}</span>
+                            <span style={{ color: '#f59e0b' }}>{v.toString()}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <BotActivityLog />
+        </div>
+
+        {/* ROW 2: SAVED VIEWS & FILTERS */}
+        <div style={{ marginBottom: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => selectView('all')}
+                className={`filter-btn ${activeViewId === 'all' ? 'active' : ''}`}
+              >
+                All
+              </button>
+              {savedViews.filter(v => v.strategy_id === selectedStratId || !selectedStratId).map(view => (
+                <div key={view.id} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <button
+                    onClick={() => selectView(view)}
+                    className={`filter-btn ${activeViewId === view.id ? 'active' : ''}`}
+                    style={{ paddingRight: '30px' }}
+                  >
+                    {view.name}
+                  </button>
+                  <ShieldAlert
+                    size={12}
+                    className="delete-view-icon"
+                    onClick={(e) => deleteView(e, view.id)}
+                    style={{ position: 'absolute', right: '10px', cursor: 'pointer' }}
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              {isViewModified() && (
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  {!isSavingView ? (
+                    <button
+                      onClick={() => setIsSavingView(true)}
+                      className="btn-primary"
+                      style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                    >
+                      Save View
+                    </button>
+                  ) : (
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <input
+                        type="text"
+                        placeholder="View Name..."
+                        value={viewName}
+                        onChange={(e) => setViewName(e.target.value)}
+                        style={{ background: '#1a1a1b', border: '1px solid #333', color: '#fff', borderRadius: '4px', padding: '4px 8px', fontSize: '0.8rem' }}
+                      />
+                      <button onClick={handleSaveView} className="btn-primary" style={{ padding: '4px 8px', fontSize: '0.8rem' }}>Save</button>
+                      <button onClick={() => setIsSavingView(false)} style={{ background: 'transparent', border: 'none', color: '#888', cursor: 'pointer' }}>✕</button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <button
+                onClick={() => setShowFilterModal(true)}
+                className="btn-secondary"
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}
+              >
+                <Plus size={14} /> Add Filter
+              </button>
+
+              <button onClick={fetchData} disabled={loading} className="btn-secondary">
+                <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+              </button>
+            </div>
+          </div>
+
+          {/* ACTIVE CONDITION CHIPS */}
+          {customFilters.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px dashed #333' }}>
+              <span style={{ fontSize: '0.75rem', color: '#666', marginRight: '4px', alignSelf: 'center' }}>Active Filters:</span>
+              {customFilters.map((f, i) => (
+                <div key={i} className="filter-chip">
+                  <span>{f.field} {f.operator} {f.value}</span>
+                  <button onClick={() => removeFilterCondition(i)}>✕</button>
+                </div>
+              ))}
+              <button
+                onClick={() => { setCustomFilters([]); setActiveViewId('all'); }}
+                style={{ background: 'transparent', border: 'none', color: '#ef4444', fontSize: '0.75rem', cursor: 'pointer', marginLeft: 'auto' }}
+              >
+                Clear All
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* ROW 3: DATA TABLE */}
+        <section>
+          <div className="glass-card" style={{ overflow: 'hidden', border: '1px solid #222' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid #333', background: '#121212' }}>
+                  <th style={{ padding: '16px', fontWeight: '600', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>Token</th>
+                  <th style={{ padding: '16px', fontWeight: '600', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>5M / 1H / 24H</th>
+                  <th style={{ padding: '16px', fontWeight: '600', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>MC / Price</th>
+                  <th style={{ padding: '16px', fontWeight: '600', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>Holders</th>
+                  <th style={{ padding: '16px', fontWeight: '600', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>Makers</th>
+                  <th style={{ padding: '16px', fontWeight: '600', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>Volume / Txns</th>
+                  <th style={{ padding: '16px', fontWeight: '600', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>Liquidity</th>
+                  <th style={{ padding: '16px', fontWeight: '600', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr><td colSpan="7" style={{ padding: '40px', textAlign: 'center', color: '#666' }}>Loading Feed...</td></tr>
+                ) : paginatedTokens.map((token) => (
+                  <React.Fragment key={token.token_id}>
+                    <tr
+                      onClick={() => handleToggleExpand(token)}
+                      className="animate-enter"
+                      style={{
+                        borderBottom: expandedToken === token.token_id ? 'none' : '1px solid #222',
+                        transition: 'background 0.2s',
+                        cursor: 'pointer',
+                        background: expandedToken === token.token_id ? 'rgba(0,198,255,0.05)' : 'transparent'
+                      }}
+                    >
+                      <td style={{ padding: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          {token.dex_rank && (
+                            <div style={{
+                              fontSize: '0.75rem',
+                              fontWeight: 800,
+                              color: '#555',
+                              minWidth: '24px'
+                            }}>
+                              #{token.dex_rank}
+                            </div>
+                          )}
+                          {token.tokens.logo_url && token.tokens.logo_url !== 'N/A' ? (
+                            <img src={token.tokens.logo_url} alt={token.tokens.symbol} style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover' }} />
+                          ) : (
+                            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#333', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', color: '#666' }}>
+                              {token.tokens.symbol?.charAt(0)}
+                            </div>
+                          )}
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                {token.dex_icon_id && dexIcons[token.dex_icon_id] && (
+                                  <img
+                                    src={dexIcons[token.dex_icon_id].url}
+                                    alt={dexIcons[token.dex_icon_id].name}
+                                    style={{ width: '12px', height: '12px', borderRadius: '2px', flexShrink: 0 }}
+                                    title={dexIcons[token.dex_icon_id].name}
+                                  />
+                                )}
+                                <span style={{ fontWeight: 'bold', color: '#fff', fontSize: '0.95rem' }}>{token.tokens.symbol}</span>
+                              </div>
+                              <span style={{ fontSize: '0.75rem', color: '#666' }}>
+                                Scraped {formatTimeAgo(token.last_scraped_at)}
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+                              <span style={{ fontSize: '0.75rem', color: '#666', fontFamily: 'monospace' }}>
+                                {token.tokens.contract_address.slice(0, 4)}...{token.tokens.contract_address.slice(-4)}
+                              </span>
+                              <div onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(token.tokens.contract_address); }} style={{ color: '#00C6FF', cursor: 'pointer', display: 'flex' }}>
+                                <Copy size={12} title="Copy Address" />
+                              </div>
+                              <div style={{ display: 'flex', gap: '6px', marginLeft: '4px' }}>
+                                <a href={`https://dexscreener.com/solana/${token.tokens.contract_address}`} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center' }}>
+                                  <img src="https://solscan.io/_next/static/media/dexscreener.e36090e0.png" alt="DexScreener" style={{ width: '12px', height: '12px', borderRadius: '2px' }} />
+                                </a>
+                                <a href={`https://solscan.io/token/${token.tokens.contract_address}`} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} style={{ color: '#a855f7' }}><ExternalLink size={12} /></a>
+                                {token.dex_age && (
+                                  <span style={{
+                                    fontSize: '0.9rem',
+                                    fontWeight: 'bold',
+                                    marginLeft: '8px',
+                                    color: (() => {
+                                      const ageStr = token.dex_age.toLowerCase();
+                                      if (ageStr.includes('y') || ageStr.includes('mo')) return '#ef4444'; // Red for Years/Months
+                                      if (ageStr.includes('d')) {
+                                        const days = parseInt(ageStr);
+                                        return days >= 7 ? '#ef4444' : '#3b82f6'; // Red >= 7d, Blue < 7d
+                                      }
+                                      return '#22c55e'; // Green < 24h
+                                    })()
+                                  }}>
+                                    {token.dex_age}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ padding: '16px' }}>
+                        <div style={{ display: 'flex', gap: '8px', fontSize: '0.8rem' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}><span>5m</span>{formatPct(token.change_m5)}</div>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}><span>1h</span>{formatPct(token.change_h1)}</div>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}><span>24h</span>{formatPct(token.change_h24)}</div>
+                        </div>
+                      </td>
+                      <td style={{ padding: '16px' }}>
+                        <div style={{ color: '#fff', fontSize: '0.9rem', fontWeight: '600' }}>{formatMcap(token.mcap)}</div>
+                        <div style={{ color: '#00C6FF', fontSize: '0.75rem', fontFamily: 'monospace' }}>{formatCurrency(token.price)}</div>
+                      </td>
+                      <td style={{ padding: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', minWidth: '80px' }}>
+                          <span style={{ color: '#fff', fontSize: '0.9rem', lineHeight: 1 }}>{token.holders}</span>
+                          <button
+                            className={`btn-icon-small ${token.force_holder_refresh ? 'loading' : ''}`}
+                            onClick={(e) => handleManualRefresh(e, token.token_id)}
+                            disabled={token.force_holder_refresh}
+                            title="Refresh Holders"
+                            style={{ width: '18px', height: '18px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent' }}
+                          >
+                            <RefreshCw size={10} className={token.force_holder_refresh ? 'animate-spin' : ''} />
+                          </button>
+                        </div>
+                        <div style={{ fontSize: '0.7rem', color: '#666', marginTop: '2px' }}>
+                          Updated {formatTimeAgo(token.holders_updated_at)}
+                        </div>
+                      </td>
+                      <td style={{ padding: '16px', color: '#fff', fontSize: '0.9rem' }}>{formatNumber(token.makers)}</td>
+                      <td style={{ padding: '16px' }}>
+                        <div style={{ color: '#fff', fontSize: '0.9rem' }}>{formatNumber(token.volume)}</div>
+                        <div style={{ color: '#00C6FF', fontSize: '0.75rem', fontWeight: '500' }}>{formatNumber(token.txns)} txns</div>
+                      </td>
+                      <td style={{ padding: '16px', color: '#fff', fontSize: '0.9rem' }}>{formatMcap(token.liquidity)}</td>
+                      <td style={{ padding: '16px' }}>
+                        {expandedToken === token.token_id ? <ChevronUp size={16} color="#00C6FF" /> : <ChevronDown size={16} color="#666" />}
+                      </td>
+                    </tr>
+                    {expandedToken === token.token_id && (
+                      <tr style={{ borderBottom: '1px solid #222', background: 'rgba(0,198,255,0.02)' }}>
+                        <td colSpan="7" style={{ padding: '20px' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                            {/* Left Column - Description & Socials */}
+                            <div>
+                              <h4 style={{ margin: '0 0 10px 0', color: '#00C6FF', fontSize: '0.9rem' }}>
+                                About {token.tokens.symbol}
+                              </h4>
+                              {metaLoading[token.tokens.contract_address] ? (
+                                <div style={{ color: '#666', fontSize: '0.8rem' }}>Loading metadata...</div>
+                              ) : tokenMetadata[token.tokens.contract_address] ? (
+                                <div>
+                                  <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
+                                    {tokenMetadata[token.tokens.contract_address].websites?.map((site, i) => (
+                                      <a key={i} href={site.url} target="_blank" rel="noreferrer" style={{ color: '#fff', display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none', fontSize: '0.8rem', background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '4px' }}>
+                                        <Globe size={14} /> Website
+                                      </a>
+                                    ))}
+                                    {tokenMetadata[token.tokens.contract_address].socials?.map((social, i) => {
+                                      let Icon = ExternalLink;
+                                      if (social.type === 'twitter') Icon = Twitter;
+                                      if (social.type === 'telegram') Icon = Send; // Lucide doesn't have Telegram, Send is close
+                                      if (social.type === 'discord') Icon = MessageCircle;
+
+                                      return (
+                                        <a key={i} href={social.url} target="_blank" rel="noreferrer" style={{ color: '#fff', display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none', fontSize: '0.8rem', background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '4px' }}>
+                                          <Icon size={14} /> {social.type.charAt(0).toUpperCase() + social.type.slice(1)}
+                                        </a>
+                                      );
+                                    })}
+                                    {(!tokenMetadata[token.tokens.contract_address].websites?.length && !tokenMetadata[token.tokens.contract_address].socials?.length) && (
+                                      <div style={{ color: '#666', fontSize: '0.8rem', fontStyle: 'italic' }}>No additional links found.</div>
+                                    )}
+                                  </div>
+                                  {tokenMetadata[token.tokens.contract_address].header && (
+                                    <img src={tokenMetadata[token.tokens.contract_address].header} alt="Header" style={{ width: '100%', borderRadius: '8px', opacity: 0.8, maxHeight: '120px', objectFit: 'cover' }} />
+                                  )}
+                                </div>
+                              ) : (
+                                <p style={{ color: '#666', fontSize: '0.8rem', fontStyle: 'italic' }}>
+                                  No description available.
+                                </p>
+                              )}
+                              {tokenMetadata[token.token_id]?.website && (
+                                <a href={tokenMetadata[token.token_id].website} target="_blank" rel="noreferrer" className="btn-secondary" style={{ padding: '4px 8px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <Globe size={12} /> Website
+                                </a>
+                              )}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '4px' }}>
+                                <ShieldAlert size={14} color={token.holders > 300 ? '#ef4444' : '#10b981'} />
+                                <span style={{ fontSize: '0.8rem', color: '#888' }}>Holders: {token.holders > 300 ? 'Safe' : 'Risky'}</span>
+                              </div>
+                            </div>
+                            {/* Right Column - Additional Stats */}
+                            <div>
+                              <h4 style={{ margin: '0 0 10px 0', color: '#00C6FF', fontSize: '0.9rem' }}>Token Details</h4>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                  <span style={{ color: '#888', fontSize: '0.8rem' }}>Created At:</span>
+                                  <span style={{ color: '#fff', fontSize: '0.8rem' }}>
+                                    {tokenMetadata[token.tokens.contract_address]?.pairCreatedAt
+                                      ? formatDetailedTimeAgo(tokenMetadata[token.tokens.contract_address].pairCreatedAt)
+                                      : new Date(token.tokens.found_at).toLocaleString()}
+                                  </span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                  <span style={{ color: '#888', fontSize: '0.8rem' }}>Strategy:</span>
+                                  <span style={{ color: '#fff', fontSize: '0.8rem' }}>{strategies.find(s => s.id === token.strategy_id)?.name || 'Unknown'}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                ))}
+              </tbody>
+            </table>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div style={{ padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0a0a0b', borderTop: '1px solid #222' }}>
+                <div style={{ color: '#666', fontSize: '0.85rem' }}>
+                  Showing <span style={{ color: '#fff' }}>{(currentPage - 1) * itemsPerPage + 1}</span> to <span style={{ color: '#fff' }}>{Math.min(currentPage * itemsPerPage, filteredTokens.length)}</span> of <span style={{ color: '#fff' }}>{filteredTokens.length}</span> tokens
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    className="btn-secondary"
+                    style={{ padding: '6px 12px', fontSize: '0.85rem', opacity: currentPage === 1 ? 0.5 : 1 }}
+                  >
+                    Previous
+                  </button>
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    {[...Array(totalPages)].map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setCurrentPage(i + 1)}
+                        style={{
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '6px',
+                          background: currentPage === i + 1 ? 'var(--primary-gradient)' : '#1a1a1a',
+                          border: '1px solid #333',
+                          color: '#fff',
+                          cursor: 'pointer',
+                          fontSize: '0.85rem'
+                        }}
+                      >
+                        {i + 1}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    className="btn-secondary"
+                    style={{ padding: '6px 12px', fontSize: '0.85rem', opacity: currentPage === totalPages ? 0.5 : 1 }}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      </main>
+      {/* TOGGLE CONFIRMATION MODAL */}
+      {
+        showRunConfirm && (
+          <div className="modal-overlay">
+            <div className="modal-content" style={{ maxWidth: '400px' }}>
+              <h3 style={{ margin: '0 0 16px 0' }}>
+                {stratToRun?.is_active ? 'Confirm Stop' : 'Confirm Start'}
+              </h3>
+              <p style={{ color: '#a1a1aa', fontSize: '0.9rem', marginBottom: '24px' }}>
+                Are you sure you want to {stratToRun?.is_active ? 'stop' : 'start'} the <strong>{stratToRun?.name}</strong> strategy?
+                {stratToRun?.is_active
+                  ? ' The bot will stop scraping new tokens for this strategy.'
+                  : ' The bot will begin scraping tokens immediately.'}
+              </p>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  onClick={() => performToggle(stratToRun.id, !stratToRun.is_active)}
+                  className={stratToRun?.is_active ? 'btn-red' : 'btn-primary'}
+                  style={{
+                    flex: 1,
+                    background: stratToRun?.is_active ? 'var(--accent-red)' : 'var(--primary-gradient)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    color: 'white',
+                    padding: '10px',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Yes, {stratToRun?.is_active ? 'Stop' : 'Start'} Strategy
+                </button>
+                <button
+                  onClick={() => setShowRunConfirm(false)}
+                  className="btn-secondary"
+                  style={{ flex: 1 }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      }
+    </div >
+  );
+}
+
+export default App;
