@@ -1005,9 +1005,218 @@ function App() {
               </tbody>
             </table>
 
+            {/* MOBILE CARD VIEW - Only visible on mobile */}
+            <div className="mobile-token-cards">
+              {loading ? (
+                <div style={{ padding: '40px', textAlign: 'center', color: '#666' }}>Loading Feed...</div>
+              ) : paginatedTokens.map((token) => (
+                <div
+                  key={token.token_id}
+                  className="glass-card mobile-token-card"
+                  onClick={() => handleToggleExpand(token)}
+                  style={{
+                    padding: '14px',
+                    marginBottom: '12px',
+                    cursor: 'pointer',
+                    border: expandedToken === token.token_id ? '1px solid rgba(0,198,255,0.3)' : '1px solid var(--glass-border)',
+                    background: expandedToken === token.token_id ? 'rgba(0,198,255,0.05)' : 'var(--glass-bg)',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {/* Token Header - Compact & Packed with Actions */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    {/* Rank */}
+                    <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#555', minWidth: '18px' }}>
+                      #{token.dex_rank || '-'}
+                    </div>
+
+                    {/* Logo */}
+                    {token.tokens.logo_url && token.tokens.logo_url !== 'N/A' ? (
+                      <img src={token.tokens.logo_url} alt={token.tokens.symbol} style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }} />
+                    ) : (
+                      <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#333', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', color: '#666' }}>
+                        {token.tokens.symbol?.charAt(0)}
+                      </div>
+                    )}
+
+                    {/* Symbol & Age */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontWeight: 'bold', color: '#fff', fontSize: '0.85rem' }}>{token.tokens.symbol}</span>
+                        <span className={`badge ${token.is_gained ? 'badge-green' : 'badge-red'}`} style={{ fontSize: '0.55rem', padding: '1px 3px' }}>
+                          {token.is_gained ? 'W' : 'L'}
+                        </span>
+                        {token.dex_age && (
+                          <span style={{ fontSize: '0.65rem', fontWeight: 600, color: formatAgeCol(token.dex_age).color }}>
+                            {token.dex_age}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Quick Actions */}
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <button
+                        className="btn-icon-small"
+                        onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(token.tokens.contract_address); }}
+                        style={{ width: '24px', height: '24px', padding: 0 }}
+                      >
+                        <Copy size={12} />
+                      </button>
+                      <a href={`https://dexscreener.com/solana/${token.tokens.contract_address}`} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center' }}>
+                        <img src="https://solscan.io/_next/static/media/dexscreener.e36090e0.png" alt="Dex" style={{ width: '16px', height: '16px', borderRadius: '2px' }} />
+                      </a>
+                      <a href={`https://rugcheck.xyz/tokens/${token.tokens.contract_address}`} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center' }}>
+                        <ShieldAlert size={16} color="#ef4444" />
+                      </a>
+                      <ChevronDown
+                        size={16}
+                        style={{
+                          color: '#666',
+                          transform: expandedToken === token.token_id ? 'rotate(180deg)' : 'rotate(0deg)',
+                          transition: 'transform 0.2s',
+                          marginLeft: '4px'
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Key Metrics Grid - Compact */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr 0.8fr', gap: '6px', marginBottom: '0' }}>
+                    {/* Market Cap */}
+                    <div style={{ background: 'rgba(255,255,255,0.02)', padding: '6px', borderRadius: '4px' }}>
+                      <div style={{ fontSize: '0.6rem', color: '#666', marginBottom: '2px' }}>MCAP</div>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#00C6FF' }}>
+                        {formatMcap(token.mcap)}
+                      </div>
+                    </div>
+
+                    {/* Holders with Refresh */}
+                    <div style={{ background: 'rgba(255,255,255,0.02)', padding: '6px', borderRadius: '4px', position: 'relative' }}>
+                      <div style={{ fontSize: '0.6rem', color: '#666', marginBottom: '2px' }}>HOLDERS</div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#10b981' }}>
+                          {token.holders ? token.holders : '-'}
+                        </div>
+                        <button
+                          className={`btn-icon-small ${token.force_holder_refresh ? 'loading' : ''}`}
+                          onClick={(e) => handleManualRefresh(e, token.token_id)}
+                          disabled={token.force_holder_refresh}
+                          style={{ width: '16px', height: '16px', padding: 0, border: 'none', background: 'transparent' }}
+                        >
+                          <RefreshCw size={10} className={token.force_holder_refresh ? 'animate-spin' : ''} style={{ opacity: 0.7 }} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Volume */}
+                    <div style={{ background: 'rgba(255,255,255,0.02)', padding: '6px', borderRadius: '4px' }}>
+                      <div style={{ fontSize: '0.6rem', color: '#666', marginBottom: '2px' }}>VOL</div>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#f59e0b' }}>
+                        {formatMcap(token.volume)}
+                      </div>
+                    </div>
+
+                    {/* Price Change */}
+                    <div style={{ background: 'rgba(255,255,255,0.02)', padding: '6px', borderRadius: '4px' }}>
+                      <div style={{ fontSize: '0.6rem', color: '#666', marginBottom: '2px' }}>24H</div>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 600, color: token.change_h24 >= 0 ? '#10b981' : '#ef4444' }}>
+                        {token.change_h24?.toFixed(1)}%
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Expanded Details */}
+                  {expandedToken === token.token_id && (
+                    <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #222' }}>
+                      {metaLoading[token.tokens.contract_address] ? (
+                        <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+                          <div className="animate-spin" style={{ display: 'inline-block' }}>⟳</div>
+                          <div style={{ marginTop: '8px', fontSize: '0.75rem' }}>Loading metadata...</div>
+                        </div>
+                      ) : tokenMetadata[token.tokens.contract_address] ? (
+                        <div style={{ fontSize: '0.75rem' }}>
+                          {/* Links */}
+                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                            {tokenMetadata[token.tokens.contract_address].websites?.map((site, i) => (
+                              <a
+                                key={i}
+                                href={site.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  padding: '6px 10px',
+                                  background: 'rgba(0,198,255,0.1)',
+                                  border: '1px solid rgba(0,198,255,0.3)',
+                                  borderRadius: '6px',
+                                  color: '#00C6FF',
+                                  fontSize: '0.7rem',
+                                  textDecoration: 'none',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '4px'
+                                }}
+                              >
+                                <Globe size={12} /> Website
+                              </a>
+                            ))}
+                            {tokenMetadata[token.tokens.contract_address].socials?.map((social, i) => {
+                              let Icon = ExternalLink;
+                              let label = social.type;
+                              let color = '#fff';
+                              let bg = 'rgba(255,255,255,0.05)';
+                              let border = 'rgba(255,255,255,0.1)';
+
+                              if (social.type === 'twitter') {
+                                Icon = Twitter;
+                                label = 'Twitter';
+                                color = '#1DA1F2';
+                                bg = 'rgba(29,161,242,0.1)';
+                                border = 'rgba(29,161,242,0.3)';
+                              } else if (social.type === 'telegram') {
+                                Icon = Send;
+                                label = 'Telegram';
+                                color = '#229ED9';
+                                bg = 'rgba(34,158,217,0.1)';
+                                border = 'rgba(34,158,217,0.3)';
+                              }
+
+                              return (
+                                <a
+                                  key={i}
+                                  href={social.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{
+                                    padding: '6px 10px',
+                                    background: bg,
+                                    border: `1px solid ${border}`,
+                                    borderRadius: '6px',
+                                    color: color,
+                                    fontSize: '0.7rem',
+                                    textDecoration: 'none',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    textTransform: 'capitalize'
+                                  }}
+                                >
+                                  <Icon size={12} /> {label}
+                                </a>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
             {/* Pagination Controls */}
             {totalPages > 1 && (
-              <div style={{ padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0a0a0b', borderTop: '1px solid #222' }}>
+              <div className="pagination-controls">
                 <div style={{ color: '#666', fontSize: '0.85rem' }}>
                   Showing <span style={{ color: '#fff' }}>{(currentPage - 1) * itemsPerPage + 1}</span> to <span style={{ color: '#fff' }}>{Math.min(currentPage * itemsPerPage, filteredTokens.length)}</span> of <span style={{ color: '#fff' }}>{filteredTokens.length}</span> tokens
                 </div>
@@ -1021,24 +1230,37 @@ function App() {
                     Previous
                   </button>
                   <div style={{ display: 'flex', gap: '4px' }}>
-                    {[...Array(totalPages)].map((_, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setCurrentPage(i + 1)}
-                        style={{
-                          width: '32px',
-                          height: '32px',
-                          borderRadius: '6px',
-                          background: currentPage === i + 1 ? 'var(--primary-gradient)' : '#1a1a1a',
-                          border: '1px solid #333',
-                          color: '#fff',
-                          cursor: 'pointer',
-                          fontSize: '0.85rem'
-                        }}
-                      >
-                        {i + 1}
-                      </button>
-                    ))}
+                    {(() => {
+                      const getPageNumbers = () => {
+                        if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
+                        if (currentPage <= 4) return [1, 2, 3, 4, 5, '...', totalPages];
+                        if (currentPage >= totalPages - 3) return [1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+                        return [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
+                      };
+
+                      return getPageNumbers().map((page, i) => (
+                        <button
+                          key={i}
+                          onClick={() => typeof page === 'number' && setCurrentPage(page)}
+                          className={typeof page === 'number' ? '' : 'no-hover'}
+                          style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '6px',
+                            background: currentPage === page ? 'var(--primary-gradient)' : '#1a1a1a',
+                            border: '1px solid #333',
+                            color: '#fff',
+                            cursor: typeof page === 'number' ? 'pointer' : 'default',
+                            fontSize: '0.85rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          {page}
+                        </button>
+                      ));
+                    })()}
                   </div>
                   <button
                     disabled={currentPage === totalPages}

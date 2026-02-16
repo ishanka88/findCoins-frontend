@@ -269,6 +269,11 @@ body {
   transform: scale(1.1);
 }
 
+/* Mobile Token Cards - Hidden by default, shown on mobile */
+.mobile-token-cards {
+  display: none;
+}
+
 /* ============================================
    MOBILE RESPONSIVE STYLES
    ============================================ */
@@ -405,9 +410,18 @@ body {
     padding: 0 14px;
   }
 
+  /* Hide table on mobile, show cards instead */
   table {
-    min-width: 700px;
-    font-size: 0.75rem;
+    display: none !important;
+  }
+
+  /* Show mobile cards */
+  .mobile-token-cards {
+    display: block !important;
+  }
+
+  .mobile-token-card {
+    animation: fadeIn 0.3s ease-out;
   }
 
   table th,
@@ -662,5 +676,35 @@ body {
 
   .activity-section {
     width: 100%;
+  }
+}
+
+/* Pagination Controls */
+.pagination-controls {
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #0a0a0b;
+  border-top: 1px solid #222;
+}
+
+@media (max-width: 768px) {
+  .pagination-controls {
+    flex-direction: column;
+    /* Stack vertically on mobile */
+    gap: 16px;
+    padding: 20px 16px;
+    text-align: center;
+  }
+
+  .pagination-controls>div:first-child {
+    margin-bottom: 4px;
+  }
+
+  /* Make the buttons container wrap if needed */
+  .pagination-controls>div:last-child {
+    flex-wrap: wrap;
+    justify-content: center;
   }
 }
