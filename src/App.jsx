@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from './supabaseClient';
-import { Activity, ShieldAlert, Coins, RefreshCw, ExternalLink, Layers, Plus, Filter, Zap, Pen, Edit, Settings, ChevronDown, ChevronUp, Twitter, Globe, Copy, MessageCircle, Send } from 'lucide-react';
+import { Activity, ShieldAlert, Coins, RefreshCw, ExternalLink, Layers, Plus, Filter, Zap, Pen, Edit, Settings, ChevronDown, ChevronUp, Twitter, Globe, Copy, MessageCircle, Send, LogOut } from 'lucide-react';
 import { CreateStrategyModal } from './CreateStrategyModal';
 import { CustomFilterModal } from './CustomFilterModal';
 import { BotSettingsModal } from './BotSettingsModal';
 import { BotActivityLog } from './BotActivityLog';
 import { generateDexScreenerUrl } from './utils/dexscreener';
+import { Login } from './Login';
 
 // Helper for detailed time ago (e.g., "1 month and 4 days ago")
 function formatDetailedTimeAgo(timestamp) {
@@ -56,6 +57,10 @@ function formatDetailedTimeAgo(timestamp) {
 // ...
 
 function App() {
+  // Authentication State
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
+
   const [tokens, setTokens] = useState([]);
   const [strategies, setStrategies] = useState([]);
   const [dexIcons, setDexIcons] = useState({}); // Mapping of id -> { url, name }
@@ -83,6 +88,26 @@ function App() {
   const [metaLoading, setMetaLoading] = useState({}); // Loading state per token
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
+
+  // Check authentication on mount
+  useEffect(() => {
+    const authToken = localStorage.getItem('findcoins_auth');
+    if (authToken === 'authenticated') {
+      setIsAuthenticated(true);
+    }
+    setAuthChecked(true);
+  }, []);
+
+  // Handle Login
+  const handleLogin = () => {
+    setIsAuthenticated(true);
+  };
+
+  // Handle Logout
+  const handleLogout = () => {
+    localStorage.removeItem('findcoins_auth');
+    setIsAuthenticated(false);
+  };
 
   // Reset page when filters change
   useEffect(() => {
@@ -405,9 +430,31 @@ function App() {
     return `${Math.floor(diff / 86400)}d ago`;
   };
 
+
   const totalPages = Math.ceil(filteredTokens.length / itemsPerPage);
   const paginatedTokens = filteredTokens.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
+  // Show loading while checking authentication
+  if (!authChecked) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #0a0a0b 0%, #1a1a2e 100%)'
+      }}>
+        <div style={{ color: '#00C6FF', fontSize: '1.2rem' }}>Loading...</div>
+      </div>
+    );
+  }
+
+  // Show Login if not authenticated
+  if (!isAuthenticated) {
+    return <Login onLogin={handleLogin} />;
+  }
+
+  // Show Dashboard if authenticated
   return (
     <div className="app-container">
       {showModal && (
@@ -468,6 +515,13 @@ function App() {
             title="Bot Settings"
           >
             <Settings size={16} />
+          </button>
+          <button
+            onClick={handleLogout}
+            style={{ padding: '8px 16px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', color: '#ef4444', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}
+            title="Logout"
+          >
+            <LogOut size={16} />
           </button>
           <button className="btn-primary" onClick={() => handleOpenModal(null)} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}>
             <Plus size={16} /> New Strategy
