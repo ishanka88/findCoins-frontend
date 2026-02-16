@@ -5,7 +5,6 @@ import { CreateStrategyModal } from './CreateStrategyModal';
 import { CustomFilterModal } from './CustomFilterModal';
 import { BotSettingsModal } from './BotSettingsModal';
 import { BotActivityLog } from './BotActivityLog';
-import { generateDexScreenerUrl } from './utils/dexscreener';
 import { Login } from './Login';
 
 // Helper for detailed time ago (e.g., "1 month and 4 days ago")
@@ -82,7 +81,7 @@ function App() {
 
   // Selection State
   const [selectedStratId, setSelectedStratId] = useState(null);
-  const [activeCategory, setActiveCategory] = useState('all'); // 'all', 'safe', 'degen'
+  const [activeCategory] = useState('all'); // 'all', 'safe', 'degen'
   const [expandedToken, setExpandedToken] = useState(null);
   const [tokenMetadata, setTokenMetadata] = useState({}); // Cache for metadata
   const [metaLoading, setMetaLoading] = useState({}); // Loading state per token
@@ -130,7 +129,7 @@ function App() {
     // Realtime Subscription
     const channel = supabase
       .channel('schema-db-changes')
-      .on('postgres_changes', { event: '*', schema: 'public' }, (payload) => {
+      .on('postgres_changes', { event: '*', schema: 'public' }, () => {
         fetchData();
       })
       .subscribe();
@@ -138,6 +137,7 @@ function App() {
     return () => {
       supabase.removeChannel(channel);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function fetchData() {

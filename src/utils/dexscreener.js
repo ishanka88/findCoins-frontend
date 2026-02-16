@@ -1,11 +1,9 @@
 export const generateDexScreenerUrl = (filters) => {
-    const baseUrl = "https://dexscreener.com/solana"; // Defaulting to solana path context, or generic?
     // DexScreener URLs are often https://dexscreener.com/solana?rankBy=... or https://dexscreener.com/?rankBy=... 
     // If specific chain is selected, it might be /chainName. 
     // But the python script used https://dexscreener.com/?... with chainIds param.
     // Let's stick to the query params approach which is most robust for filters.
 
-    let url = "https://dexscreener.com/new-pairs";
     // The scraper uses base_url = "https://dexscreener.com/" then appends query string.
     // However, for "New Pairs" specifically, it's often /new-pairs key. 
     // But if we are just filtering, the root / matches "All" usually.

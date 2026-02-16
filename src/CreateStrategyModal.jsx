@@ -5,55 +5,7 @@ import { X, Check, Save, ExternalLink } from 'lucide-react';
 
 // ... (in component)
 
-const getParams = () => {
-    const dsParams = {};
-    const keys = [
-        'minLiq', 'maxLiq', 'minMarketCap', 'maxMarketCap', 'minFdv', 'maxFdv', 'minAge', 'maxAge',
-        'min24HVol', 'max24HVol', 'min6HVol', 'max6HVol', 'min1HVol', 'max1HVol', 'min5MVol', 'max5MVol',
-        'min24HChg', 'max24HChg', 'min6HChg', 'max6HChg', 'min1HChg', 'max1HChg', 'min5MChg', 'max5MChg',
-        'min24HTxns', 'max24HTxns', 'min6HTxns', 'max6HTxns', 'min1HTxns', 'max1HTxns', 'min5MTxns', 'max5MTxns',
-        'min24HBuys', 'max24HBuys', 'min6HBuys', 'max6HBuys', 'min1HBuys', 'max1HBuys', 'min5MBuys', 'max5MBuys',
-        'min24HSells', 'max24HSells', 'min6HSells', 'max6HSells', 'min1HSells', 'max1HSells', 'min5MSells', 'max5MSells'
-    ];
-
-    keys.forEach(k => { if (formData[k]) dsParams[k] = formData[k]; });
-
-    dsParams.chainIds = selectedPlatforms.join(',');
-    if (selectedDexes.length > 0) dsParams.dexIds = selectedDexes.join(',');
-    if (formData.hasProfile) dsParams.profile = 1;
-    if (formData.isBoosted) dsParams.boosted = 1;
-
-    return dsParams;
-};
-
-const handlePreview = () => {
-    const params = getParams();
-    const url = generateDexScreenerUrl(params);
-    window.open(url, '_blank');
-};
-
-const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-
-    const dsParams = getParams();
-
-    try {
-        const { error } = await supabase.from('filter_configs').insert([{
-            name: formData.name || 'Untitled Strategy',
-            dexscreener_params: dsParams,
-            processing_rules: {},
-            is_active: true
-        }]);
-        if (error) throw error;
-        onCreated();
-        onClose();
-    } catch (err) {
-        alert(err.message);
-    } finally {
-        setLoading(false);
-    }
-};
+// Output functions removed
 
 // ... (render)
 
@@ -284,6 +236,7 @@ export function CreateStrategyModal({ onClose, onCreated, initialData = null }) 
 
             setFormData(newForm);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [initialData]);
 
     const handleChange = (e) => {
@@ -312,10 +265,7 @@ export function CreateStrategyModal({ onClose, onCreated, initialData = null }) 
         }
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-
+    const getParams = () => {
         const dsParams = {};
         const keys = [
             'minLiq', 'maxLiq', 'minMarketCap', 'maxMarketCap', 'minFdv', 'maxFdv', 'minAge', 'maxAge',
@@ -328,13 +278,25 @@ export function CreateStrategyModal({ onClose, onCreated, initialData = null }) 
 
         keys.forEach(k => { if (formData[k]) dsParams[k] = formData[k]; });
 
-        // Add Platforms & DEXes
         dsParams.chainIds = selectedPlatforms.join(',');
         if (selectedDexes.length > 0) dsParams.dexIds = selectedDexes.join(',');
-
-        // Add Toggles
         if (formData.hasProfile) dsParams.profile = 1;
         if (formData.isBoosted) dsParams.boosted = 1;
+
+        return dsParams;
+    };
+
+    const handlePreview = () => {
+        const params = getParams();
+        const url = generateDexScreenerUrl(params);
+        window.open(url, '_blank');
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+
+        const dsParams = getParams();
 
         try {
             if (initialData) {
