@@ -89,6 +89,9 @@ function App() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 
+  // Mobile tab state for Strategies/Bot Activity
+  const [mobileTab, setMobileTab] = useState('strategies'); // 'strategies' or 'activity'
+
   // Check authentication on mount
   useEffect(() => {
     const authToken = localStorage.getItem('findcoins_auth');
@@ -530,10 +533,70 @@ function App() {
       </nav>
 
       <main style={{ padding: '32px' }}>
+        {/* MOBILE TAB NAVIGATION - Only visible on mobile */}
+        <div className="mobile-tabs" style={{
+          display: 'none',
+          marginBottom: '20px'
+        }}>
+          <div style={{
+            display: 'flex',
+            gap: '8px',
+            background: 'rgba(255,255,255,0.03)',
+            padding: '4px',
+            borderRadius: '10px',
+            border: '1px solid rgba(255,255,255,0.08)'
+          }}>
+            <button
+              onClick={() => setMobileTab('strategies')}
+              style={{
+                flex: 1,
+                padding: '10px 16px',
+                background: mobileTab === 'strategies' ? 'var(--primary-gradient)' : 'transparent',
+                border: 'none',
+                borderRadius: '8px',
+                color: '#fff',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px'
+              }}
+            >
+              <Activity size={16} />
+              Strategies
+            </button>
+            <button
+              onClick={() => setMobileTab('activity')}
+              style={{
+                flex: 1,
+                padding: '10px 16px',
+                background: mobileTab === 'activity' ? 'var(--primary-gradient)' : 'transparent',
+                border: 'none',
+                borderRadius: '8px',
+                color: '#fff',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px'
+              }}
+            >
+              <ShieldAlert size={16} />
+              Bot Activity
+            </button>
+          </div>
+        </div>
+
         {/* ROW 1: STATS & LOGS */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 400px', gap: '24px', marginBottom: '32px' }}>
+        <div className="strategies-activity-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 400px', gap: '24px', marginBottom: '32px' }}>
           {/* ROW 1: STRATEGIES */}
-          <div className="glass-card" style={{ padding: '20px', marginBottom: '24px' }}>
+          <div className={`glass-card strategies-section ${mobileTab === 'strategies' ? 'mobile-active' : 'mobile-hidden'}`} style={{ padding: '20px', marginBottom: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
               <Activity size={20} style={{ color: '#00C6FF' }} />
               <h2 style={{ fontSize: '1.1rem', margin: 0, fontWeight: 600 }}>Active Strategies</h2>
@@ -626,7 +689,9 @@ function App() {
             </div>
           </div>
 
-          <BotActivityLog />
+          <div className={`activity-section ${mobileTab === 'activity' ? 'mobile-active' : 'mobile-hidden'}`}>
+            <BotActivityLog />
+          </div>
         </div>
 
         {/* ROW 2: SAVED VIEWS & FILTERS */}

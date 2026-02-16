@@ -268,3 +268,399 @@ body {
   color: #ef4444 !important;
   transform: scale(1.1);
 }
+
+/* ============================================
+   MOBILE RESPONSIVE STYLES
+   ============================================ */
+
+/* Tablet (768px - 1024px) */
+@media (max-width: 1024px) {
+  .modal-content {
+    width: 95%;
+    padding: 24px;
+  }
+
+  nav {
+    padding: 12px 20px !important;
+  }
+
+  main {
+    padding: 24px !important;
+  }
+}
+
+/* Mobile (max-width: 768px) */
+@media (max-width: 768px) {
+  body {
+    font-size: 14px;
+  }
+
+  /* Navigation - Stack vertically on mobile */
+  nav {
+    padding: 12px 16px !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    align-items: stretch !important;
+  }
+
+  nav>div:first-child {
+    width: 100%;
+    justify-content: center !important;
+  }
+
+  nav>div:last-child {
+    width: 100%;
+    justify-content: center !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+
+  nav button {
+    font-size: 0.75rem !important;
+    padding: 6px 10px !important;
+    flex: 1 1 auto;
+    min-width: fit-content;
+  }
+
+  nav button svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+
+  nav h1 {
+    font-size: 1rem !important;
+  }
+
+  /* Bot status badge - make it smaller on mobile */
+  nav>div:last-child>div:first-child {
+    padding: 4px 10px !important;
+    font-size: 0.7rem !important;
+  }
+
+  nav>div:last-child>div:first-child>div {
+    width: 6px !important;
+    height: 6px !important;
+  }
+
+  nav>div:last-child>div:first-child>span {
+    font-size: 0.7rem !important;
+  }
+
+  /* Main content */
+  main {
+    padding: 12px !important;
+  }
+
+  /* Glass cards */
+  .glass-card {
+    padding: 14px !important;
+    border-radius: 12px;
+  }
+
+  /* Sections spacing */
+  main>div {
+    margin-bottom: 16px !important;
+  }
+
+  /* Headings */
+  h2 {
+    font-size: 1.2rem !important;
+    margin-bottom: 12px !important;
+  }
+
+  h3 {
+    font-size: 1rem !important;
+  }
+
+  /* Buttons */
+  .btn-primary,
+  .btn-secondary {
+    padding: 8px 14px;
+    font-size: 0.8rem;
+  }
+
+  .filter-btn {
+    padding: 6px 10px;
+    font-size: 0.7rem;
+    height: 30px;
+  }
+
+  /* Modals */
+  .modal-content {
+    width: 95%;
+    max-width: none;
+    padding: 18px;
+    margin: 12px;
+  }
+
+  .modal-content h3 {
+    font-size: 1.1rem;
+  }
+
+  /* Tables - make them scrollable horizontally */
+  .table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -14px;
+    padding: 0 14px;
+  }
+
+  table {
+    min-width: 700px;
+    font-size: 0.75rem;
+  }
+
+  table th,
+  table td {
+    padding: 8px 6px !important;
+    white-space: nowrap;
+  }
+
+  table th {
+    font-size: 0.7rem !important;
+  }
+
+  /* Token logos */
+  table img {
+    width: 24px !important;
+    height: 24px !important;
+  }
+
+  /* Badges */
+  .badge {
+    font-size: 0.6rem;
+    padding: 2px 6px;
+  }
+
+  /* Filter chips */
+  .filter-chip {
+    font-size: 0.65rem;
+    padding: 3px 7px;
+  }
+
+  /* Strategy cards */
+  .strategy-card {
+    padding: 12px !important;
+  }
+
+  /* Pagination */
+  .pagination-container {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .pagination-container>div {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Filter controls - stack on mobile */
+  .filter-controls {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+
+  .filter-controls>div {
+    width: 100% !important;
+  }
+
+  /* Bot Activity Log */
+  .bot-activity-log {
+    max-height: 250px !important;
+    font-size: 0.7rem !important;
+  }
+
+  /* Active Strategies section */
+  .strategies-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Small Mobile (max-width: 480px) */
+@media (max-width: 480px) {
+
+  /* Navigation - even more compact */
+  nav {
+    padding: 10px 12px !important;
+  }
+
+  nav h1 {
+    font-size: 0.9rem !important;
+  }
+
+  nav button {
+    font-size: 0.7rem !important;
+    padding: 5px 8px !important;
+  }
+
+  nav button span {
+    display: none;
+    /* Hide button text, show only icons on very small screens */
+  }
+
+  nav button.btn-primary span {
+    display: inline;
+    /* Keep "New Strategy" text visible */
+  }
+
+  /* Main content */
+  main {
+    padding: 10px !important;
+  }
+
+  /* Glass cards */
+  .glass-card {
+    padding: 12px !important;
+    border-radius: 10px;
+  }
+
+  /* Headings */
+  h2 {
+    font-size: 1.1rem !important;
+  }
+
+  h3 {
+    font-size: 0.95rem !important;
+  }
+
+  /* Buttons */
+  .btn-primary,
+  .btn-secondary {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+  }
+
+  .filter-btn {
+    padding: 5px 8px;
+    font-size: 0.65rem;
+    height: 28px;
+  }
+
+  /* Modals */
+  .modal-content {
+    padding: 14px;
+    margin: 10px;
+  }
+
+  .modal-content h3 {
+    font-size: 1rem;
+  }
+
+  /* Tables */
+  table {
+    font-size: 0.7rem;
+    min-width: 650px;
+  }
+
+  table th,
+  table td {
+    padding: 6px 4px !important;
+  }
+
+  table img {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  /* Badges */
+  .badge {
+    font-size: 0.55rem;
+    padding: 2px 4px;
+  }
+
+  /* Input fields */
+  input,
+  select,
+  textarea {
+    font-size: 14px !important;
+    padding: 8px !important;
+  }
+
+  /* Bot Activity Log */
+  .bot-activity-log {
+    max-height: 200px !important;
+    font-size: 0.65rem !important;
+  }
+
+  /* Scrollbar on mobile */
+  ::-webkit-scrollbar {
+    width: 3px;
+    height: 3px;
+  }
+}
+
+/* Landscape mobile optimization */
+@media (max-width: 768px) and (orientation: landscape) {
+  nav {
+    flex-direction: row !important;
+    padding: 8px 16px !important;
+  }
+
+  nav>div {
+    width: auto !important;
+  }
+
+  main {
+    padding: 16px !important;
+  }
+
+  .bot-activity-log {
+    max-height: 150px !important;
+  }
+}
+
+/* Utility classes for mobile */
+@media (max-width: 768px) {
+  .mobile-hide {
+    display: none !important;
+  }
+
+  .mobile-full-width {
+    width: 100% !important;
+  }
+
+  .mobile-text-center {
+    text-align: center !important;
+  }
+
+  .mobile-stack {
+    flex-direction: column !important;
+  }
+
+  .mobile-scroll-hint {
+    position: relative;
+  }
+
+  .mobile-scroll-hint::after {
+    content: '← Scroll →';
+    position: absolute;
+    bottom: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.7rem;
+    color: #666;
+    font-weight: 500;
+  }
+
+  /* Mobile Tab Navigation */
+  .mobile-tabs {
+    display: block !important;
+  }
+
+  .strategies-activity-grid {
+    display: block !important;
+  }
+
+  .mobile-hidden {
+    display: none !important;
+  }
+
+  .mobile-active {
+    display: block !important;
+    margin-bottom: 0 !important;
+  }
+
+  .activity-section {
+    width: 100%;
+  }
+}
