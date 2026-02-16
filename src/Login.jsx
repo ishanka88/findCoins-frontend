@@ -13,7 +13,7 @@ export function Login({ onLogin }) {
 
         // Simulate slight delay for better UX
         setTimeout(() => {
-            const correctPassword = import.meta.env.VITE_APP_PASSWORD || 'admin123';
+            const correctPassword = 'admin123';
 
             if (password === correctPassword) {
                 // Store auth token in localStorage for persistent login
