@@ -259,8 +259,16 @@ export function BotSettingsModal({ onClose }) {
                                                     <div style={{ color: '#fff', fontSize: '0.85rem', fontFamily: 'monospace' }}>
                                                         {k?.key ? `${k.key.slice(0, 8)}...${k.key.slice(-4)}` : 'Unknown Key'}
                                                     </div>
-                                                    <div style={{ fontSize: '0.7rem', color: k?.status === 'active' ? '#10b981' : '#ef4444', textTransform: 'uppercase', fontWeight: '600' }}>
-                                                        {k?.status} • {k?.usage_count || 0} reqs {k?.is_current && <span style={{ color: '#00C6FF', marginLeft: '4px' }}>• CURRENT</span>}
+                                                    <div style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                        <span style={{
+                                                            color: k?.status === 'active' ? '#10b981' : (k?.status === 'rate_limited' ? '#f59e0b' : '#ef4444'),
+                                                            textTransform: 'uppercase', fontWeight: '700'
+                                                        }}>
+                                                            {k?.status === 'quota_exceeded' ? 'QUOTA EXCEEDED' : (k?.status === 'rate_limited' ? 'RATE LIMITED' : (k?.status || 'UNKNOWN'))}
+                                                        </span>
+                                                        <span style={{ color: '#666' }}>•</span>
+                                                        <span style={{ color: '#ccc' }}>{k?.usage_count || 0} reqs</span>
+                                                        {k?.is_current && <span style={{ color: '#00C6FF', fontWeight: '600' }}>• CURRENT</span>}
                                                     </div>
                                                 </div>
                                             </div>
