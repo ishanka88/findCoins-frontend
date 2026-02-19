@@ -1010,8 +1010,8 @@ function App() {
 
         {/* ROW 2: SAVED VIEWS & FILTERS */}
         <div style={{ marginBottom: '24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <div className="filter-controls-container">
+            <div className="filter-views-group">
               <button
                 onClick={() => selectView('all')}
                 className={`filter-btn ${activeViewId === 'all' ? 'active' : ''}`}
@@ -1057,34 +1057,8 @@ function App() {
               ))}
             </div>
 
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              {isViewModified() && (
-                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                  {!isSavingView ? (
-                    <button
-                      onClick={() => setIsSavingView(true)}
-                      className="btn-primary"
-                      style={{ padding: '6px 12px', fontSize: '0.8rem' }}
-                    >
-                      Save View
-                    </button>
-                  ) : (
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                      <input
-                        type="text"
-                        placeholder="View Name..."
-                        value={viewName}
-                        onChange={(e) => setViewName(e.target.value)}
-                        style={{ background: '#1a1a1b', border: '1px solid #333', color: '#fff', borderRadius: '4px', padding: '4px 8px', fontSize: '0.8rem' }}
-                      />
-                      <button onClick={handleSaveView} className="btn-primary" style={{ padding: '4px 8px', fontSize: '0.8rem' }}>Save</button>
-                      <button onClick={() => setIsSavingView(false)} style={{ background: 'transparent', border: 'none', color: '#888', cursor: 'pointer' }}>✕</button>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div style={{ position: 'relative', marginRight: '8px' }}>
+            <div className="filter-actions-group">
+              <div style={{ position: 'relative', width: '100%' }}>
                 <Search
                   size={14}
                   style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#666' }}
@@ -1096,10 +1070,9 @@ function App() {
                   onChange={(e) => {
                     const val = e.target.value;
                     setSearchTerm(val);
-                    setDbResults([]); // Clear database search results when typing
+                    setDbResults([]);
                     setSearchPerformed(false);
                     if (val.trim()) {
-                      // Automatically move to "All" view when searching
                       setActiveViewId('all');
                       setCustomFilters([]);
                     }
@@ -1111,12 +1084,11 @@ function App() {
                     borderRadius: '6px',
                     color: 'white',
                     fontSize: '0.8rem',
-                    width: '200px',
+                    width: '100%',
+                    boxSizing: 'border-box',
                     outline: 'none',
                     transition: 'border-color 0.2s'
                   }}
-                  onFocus={(e) => e.target.style.borderColor = '#00C6FF'}
-                  onBlur={(e) => e.target.style.borderColor = '#333'}
                 />
                 {searchTerm && (
                   <X
@@ -1131,17 +1103,47 @@ function App() {
                 )}
               </div>
 
-              <button
-                onClick={() => setShowFilterModal(true)}
-                className="btn-secondary"
-                style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}
-              >
-                <Plus size={14} /> Add Filter
-              </button>
+              <div style={{ display: 'flex', gap: '8px', width: '100%', alignItems: 'center', justifyContent: 'space-between' }}>
+                {isViewModified() && !isSavingView && (
+                  <button
+                    onClick={() => setIsSavingView(true)}
+                    className="btn-primary"
+                    style={{ flex: 1, height: '30px', padding: '0 4px', fontSize: '0.8rem', fontWeight: '800', justifyContent: 'center', display: 'flex', alignItems: 'center', minWidth: 0, textTransform: 'uppercase' }}
+                  >
+                    Save View
+                  </button>
+                )}
 
-              <button onClick={fetchData} disabled={loading} className="btn-secondary">
-                <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-              </button>
+                {isSavingView && (
+                  <div style={{ flex: '1 1 0%', display: 'flex', gap: '4px', minWidth: 0, height: '30px' }}>
+                    <input
+                      type="text"
+                      placeholder="Name..."
+                      value={viewName}
+                      onChange={(e) => setViewName(e.target.value)}
+                      style={{ flex: 1, background: '#1a1a1b', border: '1px solid #333', color: '#fff', borderRadius: '4px', padding: '4px 8px', fontSize: '0.8rem', minWidth: 0 }}
+                    />
+                    <button onClick={handleSaveView} className="btn-primary" style={{ width: '26px', height: '26px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', alignSelf: 'center' }}>✓</button>
+                  </div>
+                )}
+
+                <button
+                  onClick={() => setShowFilterModal(true)}
+                  className="btn-secondary"
+                  style={{ flex: 1, height: '30px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', fontWeight: '800', justifyContent: 'center', minWidth: 0, padding: '0 4px', textTransform: 'uppercase' }}
+                >
+                  <Plus size={14} /> Add Filter
+                </button>
+
+                <button
+                  onClick={fetchData}
+                  disabled={loading}
+                  className="btn-secondary"
+                  style={{ width: '30px', height: '30px', padding: 0, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '6px', border: '1px solid #333' }}
+                >
+                  <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+                </button>
+              </div>
             </div>
           </div>
 

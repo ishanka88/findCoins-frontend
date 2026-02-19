@@ -708,3 +708,59 @@ body {
     justify-content: center;
   }
 }
+
+/* New Filter Controls Responsiveness */
+.filter-controls-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.filter-views-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.filter-actions-group {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+@media (max-width: 768px) {
+  .filter-controls-container {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 16px !important;
+  }
+
+  .filter-views-group {
+    justify-content: center !important;
+    order: 2 !important;
+    /* Move filters below search group */
+  }
+
+  .filter-actions-group {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    order: 1 !important;
+    /* Move search group to top */
+  }
+
+  .filter-actions-group>div {
+    margin-right: 0 !important;
+    width: 100% !important;
+  }
+
+  .filter-actions-group input {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .filter-actions-group button {
+    justify-content: center !important;
+  }
+}
