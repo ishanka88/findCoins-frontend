@@ -42,11 +42,18 @@ export function CustomFilterModal({ onClose, onAdd }) {
 
     const FIELDS = [
         { id: 'mcap', label: 'Market Cap' },
+        { id: 'found_at_mcap', label: 'Found At MC' },
+        { id: 'holders', label: 'Holders (If available)' },
+        { id: 'holders_ratio', label: 'Holders Change % (Current vs Found)' },
         { id: 'liquidity', label: 'Liquidity' },
         { id: 'volume', label: 'Volume (24h)' },
         { id: 'change24h', label: 'Change (24h) %' },
-        { id: 'holders', label: 'Holders (If available)' },
-        { id: 'price', label: 'Price' }
+        { id: 'price', label: 'Price' },
+        { id: 'found_at_minutes', label: 'Found At (minutes ago)' },
+        { id: 'found_at_days', label: 'Found At (days ago)' },
+        { id: 'created_at_minutes', label: 'Coin Created At (minutes ago)' },
+        { id: 'created_at_days', label: 'Coin Created At (days ago)' },
+        { id: 'mc_ratio', label: 'MC Change % (Current vs Found)' }
     ];
 
     return (
@@ -72,7 +79,15 @@ export function CustomFilterModal({ onClose, onAdd }) {
                         <label style={{ display: 'block', color: '#888', marginBottom: '8px', fontSize: '0.9rem' }}>If</label>
                         <select
                             value={field}
-                            onChange={(e) => setField(e.target.value)}
+                            onChange={(e) => {
+                                const newField = e.target.value;
+                                setField(newField);
+                                if (['found_at_minutes', 'found_at_days', 'created_at_minutes', 'created_at_days', 'found_at_mcap'].includes(newField)) {
+                                    setOperator('<');
+                                } else if (['mc_ratio', 'holders_ratio'].includes(newField)) {
+                                    setOperator('>');
+                                }
+                            }}
                             style={{ width: '100%', padding: '10px', background: '#1e1e20', border: '1px solid #333', borderRadius: '6px', color: 'white' }}
                         >
                             {FIELDS.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
