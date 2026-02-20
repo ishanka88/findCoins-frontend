@@ -190,11 +190,13 @@ function App() {
     fetchData();
     fetchActiveMoralisUsage();
 
-    // Realtime Subscription
+    // Realtime Subscriptions
     const channel = supabase
-      .channel('schema-db-changes')
-      .on('postgres_changes', { event: '*', schema: 'public' }, () => {
-        fetchData();
+      .channel('db-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'active_tokens' }, () => fetchData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'filter_configs' }, () => fetchData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bot_settings' }, () => fetchData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'moralis_keys' }, () => {
         fetchActiveMoralisUsage();
       })
       .subscribe();
@@ -202,7 +204,7 @@ function App() {
     const interval = setInterval(() => {
       fetchData();
       fetchActiveMoralisUsage();
-    }, 30000);
+    }, 20000); // More frequent polling for mobile
 
     return () => {
       supabase.removeChannel(channel);
