@@ -60,6 +60,30 @@ function calculateMcChange(currentMc, foundMc) {
   return ((currentMc - foundMc) / foundMc) * 100;
 }
 
+// Helper to calculate the percentage change between current holders and found-at holders
+function calculateHoldersChange(currentHolders, foundHolders) {
+  if (!currentHolders || !foundHolders) return null;
+  const curr = parseInt(currentHolders, 10);
+  const found = parseInt(foundHolders, 10);
+  if (isNaN(curr) || isNaN(found) || found === 0) return null;
+  return ((curr - found) / found) * 100;
+}
+
+// Helper to convert DexScreener age strings to minutes for filtering
+function parseDexAgeToMinutes(ageStr) {
+  if (!ageStr) return null;
+  const str = ageStr.toLowerCase();
+  const val = parseFloat(str);
+  if (isNaN(val)) return null;
+
+  if (str.includes('mo')) return val * 30 * 24 * 60;
+  if (str.includes('y')) return val * 365 * 24 * 60;
+  if (str.includes('d')) return val * 24 * 60;
+  if (str.includes('h')) return val * 60;
+  if (str.includes('m')) return val;
+  return null;
+}
+
 // ...
 
 function App() {
@@ -102,6 +126,8 @@ function App() {
   const [copiedId, setCopiedId] = useState(null);
   const [moralisKeyInfo, setMoralisKeyInfo] = useState({ count: 0, keySnippet: '' });
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('dex_rank');
+  const [sortOrder, setSortOrder] = useState('asc');
   const [dbResults, setDbResults] = useState([]);
   const [searchingDb, setSearchingDb] = useState(false);
   const [searchPerformed, setSearchPerformed] = useState(false);
@@ -512,6 +538,36 @@ function App() {
       else if (f.field === 'change_h24') val = t.change_h24;
       else if (f.field === 'holders') val = t.holders;
       else if (f.field === 'price') val = t.price;
+      else if (f.field === 'found_at_minutes') {
+        if (!t.tokens?.found_at) return false;
+        val = (Date.now() - new Date(t.tokens.found_at).getTime()) / (1000 * 60);
+      }
+      else if (f.field === 'found_at_days') {
+        if (!t.tokens?.found_at) return false;
+        val = (Date.now() - new Date(t.tokens.found_at).getTime()) / (1000 * 60 * 60 * 24);
+      }
+      else if (f.field === 'created_at_minutes') {
+        const mins = parseDexAgeToMinutes(t.dex_age);
+        if (mins === null) return false;
+        val = mins;
+      }
+      else if (f.field === 'created_at_days') {
+        const mins = parseDexAgeToMinutes(t.dex_age);
+        if (mins === null) return false;
+        val = mins / (60 * 24);
+      }
+      else if (f.field === 'mc_ratio') {
+        if (!t.mcap || !t.tokens?.found_at_mcap) return false;
+        val = calculateMcChange(t.mcap, t.tokens.found_at_mcap);
+      }
+      else if (f.field === 'holders_ratio') {
+        if (!t.holders || !t.tokens?.found_at_holders) return false;
+        val = calculateHoldersChange(t.holders, t.tokens.found_at_holders);
+      }
+      else if (f.field === 'found_at_mcap') {
+        if (!t.tokens?.found_at_mcap) return false;
+        val = t.tokens.found_at_mcap;
+      }
 
       if (val === undefined || val === null) return false;
 
@@ -522,9 +578,34 @@ function App() {
 
     return true;
   }).sort((a, b) => {
-    const rankA = a.dex_rank || 999;
-    const rankB = b.dex_rank || 999;
-    return rankA - rankB;
+    let valA = a[sortBy] !== undefined ? a[sortBy] : a.tokens?.[sortBy];
+    let valB = b[sortBy] !== undefined ? b[sortBy] : b.tokens?.[sortBy];
+
+    // Custom mappings
+    if (sortBy === 'dex_rank') {
+      valA = a.dex_rank || Number.MAX_SAFE_INTEGER;
+      valB = b.dex_rank || Number.MAX_SAFE_INTEGER;
+    } else if (sortBy === 'dex_age') {
+      valA = parseDexAgeToMinutes(a.dex_age);
+      valB = parseDexAgeToMinutes(b.dex_age);
+      if (valA === null) valA = Number.MAX_SAFE_INTEGER;
+      if (valB === null) valB = Number.MAX_SAFE_INTEGER;
+    } else if (sortBy === 'found_at') {
+      valA = a.tokens?.found_at ? new Date(a.tokens.found_at).getTime() : 0;
+      valB = b.tokens?.found_at ? new Date(b.tokens.found_at).getTime() : 0;
+    } else if (sortBy === 'mc_ratio') {
+      valA = calculateMcChange(a.mcap, a.tokens?.found_at_mcap);
+      valB = calculateMcChange(b.mcap, b.tokens?.found_at_mcap);
+      if (valA === null) valA = -Number.MAX_SAFE_INTEGER;
+      if (valB === null) valB = -Number.MAX_SAFE_INTEGER;
+    }
+
+    if (valA === valB) return 0;
+    if (valA === undefined || valA === null) return 1;
+    if (valB === undefined || valB === null) return -1;
+
+    if (sortOrder === 'asc') return valA > valB ? 1 : -1;
+    return valA < valB ? 1 : -1;
   });
 
   const handleSaveView = async () => {
@@ -551,8 +632,25 @@ function App() {
     }
   };
 
+  const handleSortToggle = (colKey, defaultOrder = 'desc') => {
+    if (sortBy === colKey) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(colKey);
+      setSortOrder(defaultOrder);
+    }
+  };
+
+  const getSortIcon = (colKey) => {
+    if (sortBy !== colKey) return <span style={{ opacity: 0.3, marginLeft: '4px' }}>↕</span>;
+    return <span style={{ color: '#10b981', marginLeft: '4px' }}>{sortOrder === 'asc' ? '↑' : '↓'}</span>;
+  };
+
   const deleteView = async (e, id) => {
     e.stopPropagation();
+    if (!window.confirm('Are you sure you want to delete this saved filter view?')) {
+      return;
+    }
     try {
       await supabase.from('saved_views').delete().eq('id', id);
       setSavedViews(prev => prev.filter(v => v.id !== id));
@@ -1165,8 +1263,38 @@ function App() {
                   className="btn-secondary"
                   style={{ flex: 1, height: '30px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', fontWeight: '800', justifyContent: 'center', minWidth: 0, padding: '0 4px', textTransform: 'uppercase' }}
                 >
-                  <Plus size={14} /> Add Filter
+                  <Plus size={14} /> Filter
                 </button>
+
+                <select
+                  value={`${sortBy}-${sortOrder}`}
+                  onChange={(e) => {
+                    const [newBy, newOrder] = e.target.value.split('-');
+                    setSortBy(newBy);
+                    setSortOrder(newOrder);
+                  }}
+                  style={{
+                    height: '30px',
+                    fontSize: '0.8rem',
+                    padding: '0 8px',
+                    border: '1px solid #333',
+                    background: 'rgba(255,255,255,0.05)',
+                    color: '#fff',
+                    borderRadius: '6px',
+                    outline: 'none'
+                  }}
+                >
+                  <option style={{ backgroundColor: '#1a1a1b', color: '#fff' }} value="dex_rank-asc">Default Rank</option>
+                  <option style={{ backgroundColor: '#1a1a1b', color: '#fff' }} value="mcap-desc">Market Cap (High - Low)</option>
+                  <option style={{ backgroundColor: '#1a1a1b', color: '#fff' }} value="mcap-asc">Market Cap (Low - High)</option>
+                  <option style={{ backgroundColor: '#1a1a1b', color: '#fff' }} value="holders-desc">Holders (High - Low)</option>
+                  <option style={{ backgroundColor: '#1a1a1b', color: '#fff' }} value="holders-asc">Holders (Low - High)</option>
+                  <option style={{ backgroundColor: '#1a1a1b', color: '#fff' }} value="volume-desc">Volume (High - Low)</option>
+                  <option style={{ backgroundColor: '#1a1a1b', color: '#fff' }} value="change_h24-desc">Change 24h (High - Low)</option>
+                  <option style={{ backgroundColor: '#1a1a1b', color: '#fff' }} value="dex_age-asc">Dex Age (New - Old)</option>
+                  <option style={{ backgroundColor: '#1a1a1b', color: '#fff' }} value="found_at-desc">Found At (New - Old)</option>
+                  <option style={{ backgroundColor: '#1a1a1b', color: '#fff' }} value="mc_ratio-desc">MC Change % (High - Low)</option>
+                </select>
 
                 <button
                   onClick={fetchData}
@@ -1206,13 +1334,13 @@ function App() {
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid #333', background: '#121212' }}>
-                  <th style={{ padding: '16px', fontWeight: '600', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>Token</th>
-                  <th style={{ padding: '16px', fontWeight: '600', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>5M / 1H / 24H</th>
-                  <th style={{ padding: '16px', fontWeight: '600', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>MC / Price</th>
-                  <th style={{ padding: '16px', fontWeight: '600', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>Holders</th>
-                  <th style={{ padding: '16px', fontWeight: '600', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>Makers</th>
-                  <th style={{ padding: '16px', fontWeight: '600', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>Volume / Txns</th>
-                  <th style={{ padding: '16px', fontWeight: '600', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>Liquidity</th>
+                  <th onClick={() => handleSortToggle('dex_rank', 'asc')} style={{ cursor: 'pointer', userSelect: 'none', padding: '16px', fontWeight: '600', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>Token {getSortIcon('dex_rank')}</th>
+                  <th onClick={() => handleSortToggle('change_h24')} style={{ cursor: 'pointer', userSelect: 'none', padding: '16px', fontWeight: '600', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>5M / 1H / 24H {getSortIcon('change_h24')}</th>
+                  <th onClick={() => handleSortToggle('mcap')} style={{ cursor: 'pointer', userSelect: 'none', padding: '16px', fontWeight: '600', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>MC / Price {getSortIcon('mcap')}</th>
+                  <th onClick={() => handleSortToggle('holders')} style={{ cursor: 'pointer', userSelect: 'none', padding: '16px', fontWeight: '600', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>Holders {getSortIcon('holders')}</th>
+                  <th onClick={() => handleSortToggle('makers')} style={{ cursor: 'pointer', userSelect: 'none', padding: '16px', fontWeight: '600', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>Makers {getSortIcon('makers')}</th>
+                  <th onClick={() => handleSortToggle('volume')} style={{ cursor: 'pointer', userSelect: 'none', padding: '16px', fontWeight: '600', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>Volume / Txns {getSortIcon('volume')}</th>
+                  <th onClick={() => handleSortToggle('liquidity')} style={{ cursor: 'pointer', userSelect: 'none', padding: '16px', fontWeight: '600', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>Liquidity {getSortIcon('liquidity')}</th>
                   <th style={{ padding: '16px', fontWeight: '600', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>Action</th>
                 </tr>
               </thead>
@@ -1352,7 +1480,7 @@ function App() {
                               if (mcChange !== null) {
                                 return (
                                   <span style={{ fontSize: '0.65rem', color: mcChange > 0 ? '#10b981' : (mcChange < 0 ? '#ef4444' : '#888') }}>
-                                    {mcChange > 0 ? '+' : ''}{mcChange.toFixed(1)}%
+                                    {mcChange > 0 ? '+' : ''}{Math.round(mcChange)}%
                                   </span>
                                 );
                               }
@@ -1366,7 +1494,20 @@ function App() {
                           title={`MC - ${token.tokens.found_at_mcap != null ? formatMcap(token.tokens.found_at_mcap) : 'N/A'}\nHol - ${token.tokens.found_at_holders != null ? token.tokens.found_at_holders : 'N/A'}\n${token.tokens.found_at ? formatDetailedTimeAgo(new Date(token.tokens.found_at).getTime()) : 'N/A'}`}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', minWidth: '80px' }}>
-                            <span style={{ color: '#fff', fontSize: '0.9rem', lineHeight: 1 }}>{token.holders}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ color: '#fff', fontSize: '0.9rem', lineHeight: 1 }}>{token.holders}</span>
+                              {(() => {
+                                const holdersChange = calculateHoldersChange(token.holders, token.tokens.found_at_holders);
+                                if (holdersChange !== null) {
+                                  return (
+                                    <span style={{ fontSize: '0.65rem', color: holdersChange > 0 ? '#10b981' : (holdersChange < 0 ? '#ef4444' : '#888') }}>
+                                      {holdersChange > 0 ? '+' : ''}{Math.round(holdersChange)}%
+                                    </span>
+                                  );
+                                }
+                                return null;
+                              })()}
+                            </div>
                             <button
                               className={`btn-icon-small ${token.force_holder_refresh ? 'loading' : ''}`}
                               onClick={(e) => handleManualRefresh(e, token.token_id)}
@@ -1607,7 +1748,7 @@ function App() {
                           if (mcChange !== null) {
                             return (
                               <span style={{ fontSize: '0.65rem', fontWeight: '600', color: mcChange > 0 ? '#10b981' : (mcChange < 0 ? '#ef4444' : '#888'), marginRight: '4px' }}>
-                                {mcChange > 0 ? '+' : ''}{mcChange.toFixed(1)}%
+                                {mcChange > 0 ? '+' : ''}{Math.round(mcChange)}%
                               </span>
                             );
                           }
@@ -1687,6 +1828,17 @@ function App() {
                           <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#10b981' }}>
                             {token.holders ? token.holders : '-'}
                           </span>
+                          {(() => {
+                            const holdersChange = calculateHoldersChange(token.holders, token.tokens.found_at_holders);
+                            if (holdersChange !== null) {
+                              return (
+                                <span style={{ fontSize: '0.65rem', fontWeight: '600', color: holdersChange > 0 ? '#10b981' : (holdersChange < 0 ? '#ef4444' : '#888'), marginLeft: '2px' }}>
+                                  {holdersChange > 0 ? '+' : ''}{Math.round(holdersChange)}%
+                                </span>
+                              );
+                            }
+                            return null;
+                          })()}
                           <span style={{ fontSize: '0.55rem', color: '#666', opacity: 0.8, marginLeft: 'auto' }}>
                             {formatTimeAgo(token.holders_updated_at)}
                           </span>
