@@ -395,11 +395,30 @@ function App() {
 
   const handleManualRefresh = async (e, tokenId) => {
     e.stopPropagation();
+
+    // Check if Moralis API is globally disabled/erroring
+    if (botSettings?.moralis_api_status === 'error') {
+      alert("Cannot refresh holders: The Moralis API is currently down or has exceeded its rate limit. Please wait for the cooldown to expire.");
+      return;
+    }
+
     try {
+      // 1. Insert into the jobs table (backend thread picks this up)
+      const { error: insertError } = await supabase
+        .from('manual_holder_refreshes')
+        .insert([{ token_id: tokenId }]);
+
+      // Ignore duplicate key errors (spammed clicks)
+      if (insertError && insertError.code !== '23505') {
+        throw insertError;
+      }
+
+      // 2. Update active_tokens flag just for the UI spinner feedback
       await supabase
         .from('active_tokens')
         .update({ force_holder_refresh: true })
         .eq('token_id', tokenId);
+
     } catch (err) {
       console.error("Refresh Trigger Error:", err);
     }
@@ -499,44 +518,6 @@ function App() {
       else if (f.field === 'volume') val = t.volume;
       else if (f.field === 'change_h24') val = t.change_h24;
       else if (f.field === 'holders') val = t.holders;
-      // Add more fields if needed
-
-      if (val === undefined || val === null) return false;
-      const numVal = parseFloat(f.value);
-
-      if (f.operator === '>') {
-        if (val <= numVal) return false;
-      } else if (f.operator === '<') {
-        if (val >= numVal) return false;
-      } else if (f.operator === '=') {
-        // approximate equality for floats? or strict
-        if (Math.abs(val - numVal) > 0.0001) return false;
-      }
-    }
-    return true;
-  };
-
-  // Filter Logic
-  const filteredTokens = tokens.filter(t => {
-    // 1. Search Term (High Priority - Global Search)
-    if (searchTerm) {
-      const lowerSearch = searchTerm.toLowerCase();
-      const symbolMatch = t.tokens.symbol?.toLowerCase().includes(lowerSearch);
-      const caMatch = t.tokens.contract_address?.toLowerCase().includes(lowerSearch);
-      return symbolMatch || caMatch;
-    }
-
-    // 2. Must match selected strategy (only if no search)
-    if (selectedStratId && t.strategy_id !== selectedStratId) return false;
-
-    // 3. Custom Filters (only if no search)
-    for (const f of customFilters) {
-      let val;
-      if (f.field === 'mcap') val = t.mcap;
-      else if (f.field === 'liquidity') val = t.liquidity;
-      else if (f.field === 'volume') val = t.volume;
-      else if (f.field === 'change_h24') val = t.change_h24;
-      else if (f.field === 'holders') val = t.holders;
       else if (f.field === 'price') val = t.price;
       else if (f.field === 'found_at_minutes') {
         if (!t.tokens?.found_at) return false;
@@ -571,12 +552,29 @@ function App() {
 
       if (val === undefined || val === null) return false;
 
+      // Ensure comparison operators work properly including legacy '=' support
       if (f.operator === '>' && !(val > f.value)) return false;
       if (f.operator === '<' && !(val < f.value)) return false;
-      if (f.operator === '==' && !(val == f.value)) return false;
+      if ((f.operator === '==' || f.operator === '=') && !(val == f.value)) return false;
+    }
+    return true;
+  };
+
+  // Filter Logic
+  const filteredTokens = tokens.filter(t => {
+    // 1. Search Term (High Priority - Global Search)
+    if (searchTerm) {
+      const lowerSearch = searchTerm.toLowerCase();
+      const symbolMatch = t.tokens.symbol?.toLowerCase().includes(lowerSearch);
+      const caMatch = t.tokens.contract_address?.toLowerCase().includes(lowerSearch);
+      return symbolMatch || caMatch;
     }
 
-    return true;
+    // 2. Must match selected strategy (only if no search)
+    if (selectedStratId && t.strategy_id !== selectedStratId) return false;
+
+    // 3. Custom Filters (only if no search)
+    return doesTokenMatchCustomFilters(t, customFilters);
   }).sort((a, b) => {
     let valA = a[sortBy] !== undefined ? a[sortBy] : a.tokens?.[sortBy];
     let valB = b[sortBy] !== undefined ? b[sortBy] : b.tokens?.[sortBy];
@@ -1513,9 +1511,13 @@ function App() {
                               onClick={(e) => handleManualRefresh(e, token.token_id)}
                               disabled={token.force_holder_refresh}
                               title="Refresh Holders"
-                              style={{ width: '18px', height: '18px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent' }}
+                              style={{ width: '22px', height: '22px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent' }}
                             >
-                              <RefreshCw size={10} className={token.force_holder_refresh ? 'animate-spin' : ''} />
+                              <RefreshCw
+                                size={14}
+                                className={token.force_holder_refresh ? 'animate-spin' : ''}
+                                color={token.force_holder_refresh ? '#facc15' : 'currentColor'}
+                              />
                             </button>
                           </div>
                           <div style={{ fontSize: '0.7rem', color: '#666', marginTop: '2px' }}>
