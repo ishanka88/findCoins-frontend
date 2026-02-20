@@ -54,6 +54,12 @@ function formatDetailedTimeAgo(timestamp) {
   return `${years} years and ${months} months ago`;
 }
 
+// Helper to calculate the percentage change between current MCAP and found-at MCAP
+function calculateMcChange(currentMc, foundMc) {
+  if (!currentMc || !foundMc) return null;
+  return ((currentMc - foundMc) / foundMc) * 100;
+}
+
 // ...
 
 function App() {
@@ -101,6 +107,21 @@ function App() {
   const [searchPerformed, setSearchPerformed] = useState(false);
   const [detailsToken, setDetailsToken] = useState(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
+  const [minimizedStrats, setMinimizedStrats] = useState({});
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const isStratMinimized = (stratId) => {
+    if (minimizedStrats[stratId] !== undefined) {
+      return minimizedStrats[stratId];
+    }
+    return isMobile;
+  };
 
   // Check authentication on mount
   useEffect(() => {
@@ -956,46 +977,58 @@ function App() {
                   </button>
 
                   {selectedStratId === strat.id && (
-                    <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: '8px', padding: '12px', border: '1px solid #333' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                    <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: '8px', padding: '12px', border: '1px solid #333', position: 'relative' }}>
+                      <button
+                        onClick={() => setMinimizedStrats(prev => ({ ...prev, [strat.id]: !isStratMinimized(strat.id) }))}
+                        style={{ position: 'absolute', top: '10px', right: '10px', background: 'transparent', border: 'none', color: '#888', cursor: 'pointer', display: 'flex', padding: '2px' }}
+                      >
+                        {isStratMinimized(strat.id) ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+                      </button>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isStratMinimized(strat.id) ? '0' : '12px', paddingRight: '24px' }}>
                         <span style={{ fontSize: '0.75rem', color: strat.is_active ? '#10b981' : '#ef4444', fontWeight: 600 }}>
                           {strat.is_active ? 'RUNNING' : 'PAUSED'}
                         </span>
-                        {!strat.is_active ? (
-                          <button
-                            onClick={() => toggleStrategyActive(strat)}
-                            className="btn-primary"
-                            style={{ padding: '2px 10px', fontSize: '0.7rem' }}
-                          >
-                            RUN
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => toggleStrategyActive(strat)}
-                            style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid #ef4444', borderRadius: '4px', padding: '2px 10px', fontSize: '0.7rem', cursor: 'pointer' }}
-                          >
-                            STOP
-                          </button>
-                        )}
+
+                        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                          {!strat.is_active ? (
+                            <button
+                              onClick={() => toggleStrategyActive(strat)}
+                              className="btn-primary"
+                              style={{ padding: '2px 10px', fontSize: '0.7rem' }}
+                            >
+                              RUN
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => toggleStrategyActive(strat)}
+                              style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid #ef4444', borderRadius: '4px', padding: '2px 10px', fontSize: '0.7rem', cursor: 'pointer' }}
+                            >
+                              STOP
+                            </button>
+                          )}
+                        </div>
                       </div>
 
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <span style={{ fontSize: '0.7rem', color: '#666', borderBottom: '1px solid #222', paddingBottom: '2px' }}>DEXSCREENER PARAMS</span>
-                        {Object.entries(strat.dexscreener_params).map(([k, v]) => (
-                          <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
-                            <span style={{ color: '#888' }}>{k}</span>
-                            <span style={{ color: '#00C6FF' }}>{v.toString()}</span>
-                          </div>
-                        ))}
+                      {!isStratMinimized(strat.id) && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <span style={{ fontSize: '0.7rem', color: '#666', borderBottom: '1px solid #222', paddingBottom: '2px' }}>DEXSCREENER PARAMS</span>
+                          {Object.entries(strat.dexscreener_params).map(([k, v]) => (
+                            <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+                              <span style={{ color: '#888' }}>{k}</span>
+                              <span style={{ color: '#00C6FF' }}>{v.toString()}</span>
+                            </div>
+                          ))}
 
-                        <span style={{ fontSize: '0.7rem', color: '#666', borderBottom: '1px solid #222', paddingBottom: '2px', marginTop: '8px' }}>PROCESSING RULES</span>
-                        {Object.entries(strat.processing_rules).map(([k, v]) => (
-                          <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
-                            <span style={{ color: '#888' }}>{k}</span>
-                            <span style={{ color: '#f59e0b' }}>{v.toString()}</span>
-                          </div>
-                        ))}
-                      </div>
+                          <span style={{ fontSize: '0.7rem', color: '#666', borderBottom: '1px solid #222', paddingBottom: '2px', marginTop: '8px' }}>PROCESSING RULES</span>
+                          {Object.entries(strat.processing_rules).map(([k, v]) => (
+                            <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+                              <span style={{ color: '#888' }}>{k}</span>
+                              <span style={{ color: '#f59e0b' }}>{v.toString()}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1306,11 +1339,32 @@ function App() {
                             <div style={{ display: 'flex', flexDirection: 'column' }}><span>24h</span>{formatPct(token.change_h24)}</div>
                           </div>
                         </td>
-                        <td style={{ padding: '16px' }}>
-                          <div style={{ color: '#fff', fontSize: '0.9rem', fontWeight: '600' }}>{formatMcap(token.mcap)}</div>
+                        <td
+                          style={{ padding: '16px' }}
+                          title={`MC - ${token.tokens.found_at_mcap != null ? formatMcap(token.tokens.found_at_mcap) : 'N/A'}\nHol - ${token.tokens.found_at_holders != null ? token.tokens.found_at_holders : 'N/A'}\n${token.tokens.found_at ? formatDetailedTimeAgo(new Date(token.tokens.found_at).getTime()) : 'N/A'}`}
+                        >
+                          <div
+                            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                          >
+                            <div style={{ color: '#fff', fontSize: '0.9rem', fontWeight: '600' }}>{formatMcap(token.mcap)}</div>
+                            {(() => {
+                              const mcChange = calculateMcChange(token.mcap, token.tokens.found_at_mcap);
+                              if (mcChange !== null) {
+                                return (
+                                  <span style={{ fontSize: '0.65rem', color: mcChange > 0 ? '#10b981' : (mcChange < 0 ? '#ef4444' : '#888') }}>
+                                    {mcChange > 0 ? '+' : ''}{mcChange.toFixed(1)}%
+                                  </span>
+                                );
+                              }
+                              return null;
+                            })()}
+                          </div>
                           <div style={{ color: '#00C6FF', fontSize: '0.75rem', fontFamily: 'monospace' }}>{formatCurrency(token.price)}</div>
                         </td>
-                        <td style={{ padding: '16px' }}>
+                        <td
+                          style={{ padding: '16px' }}
+                          title={`MC - ${token.tokens.found_at_mcap != null ? formatMcap(token.tokens.found_at_mcap) : 'N/A'}\nHol - ${token.tokens.found_at_holders != null ? token.tokens.found_at_holders : 'N/A'}\n${token.tokens.found_at ? formatDetailedTimeAgo(new Date(token.tokens.found_at).getTime()) : 'N/A'}`}
+                        >
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', minWidth: '80px' }}>
                             <span style={{ color: '#fff', fontSize: '0.9rem', lineHeight: 1 }}>{token.holders}</span>
                             <button
@@ -1491,6 +1545,13 @@ function App() {
 
             {/* MOBILE CARD VIEW - Only visible on mobile */}
             <div className="mobile-token-cards">
+              {/* Top Scraped Time Indicator */}
+              {paginatedTokens.length > 0 && (
+                <div style={{ textAlign: 'center', marginBottom: '12px', fontSize: '0.75rem', color: '#666' }}>
+                  Scraped {formatTimeAgo(paginatedTokens[0].last_scraped_at)}
+                </div>
+              )}
+
               {loading ? (
                 <div style={{ padding: '40px', textAlign: 'center', color: '#666' }}>Loading Feed...</div>
               ) : paginatedTokens.length > 0 ? (
@@ -1540,7 +1601,18 @@ function App() {
                       </div>
 
                       {/* Quick Actions */}
-                      <div style={{ display: 'flex', gap: '6px' }}>
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                        {(() => {
+                          const mcChange = calculateMcChange(token.mcap, token.tokens.found_at_mcap);
+                          if (mcChange !== null) {
+                            return (
+                              <span style={{ fontSize: '0.65rem', fontWeight: '600', color: mcChange > 0 ? '#10b981' : (mcChange < 0 ? '#ef4444' : '#888'), marginRight: '4px' }}>
+                                {mcChange > 0 ? '+' : ''}{mcChange.toFixed(1)}%
+                              </span>
+                            );
+                          }
+                          return null;
+                        })()}
                         <button
                           className="btn-icon-small"
                           onClick={(e) => handleCopy(e, `https://dexscreener.com/solana/${token.tokens.contract_address}`, token.token_id)}
@@ -1579,32 +1651,6 @@ function App() {
                         <a href={`https://rugcheck.xyz/tokens/${token.tokens.contract_address}`} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center' }}>
                           <ShieldAlert size={16} color="#ef4444" />
                         </a>
-                        <button
-                          className="btn-icon-small"
-                          onClick={(e) => handleOpenAllLinks(e, token.tokens.contract_address)}
-                          title="Open All Links"
-                          style={{ width: '24px', height: '24px', padding: 0, background: 'transparent', cursor: 'pointer' }}
-                        >
-                          <Layers size={14} color="#00C6FF" />
-                        </button>
-                        <a
-                          href={`https://solscan.io/token/${token.tokens.contract_address}#holders`}
-                          target="_blank"
-                          rel="noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          title="Solscan Holders"
-                          style={{ display: 'flex', alignItems: 'center' }}
-                        >
-                          <Search size={14} color="#00C6FF" />
-                        </a>
-                        <button
-                          className="btn-icon-small"
-                          onClick={(e) => handleBlacklistToken(e, token.token_id)}
-                          title="Remove permanently"
-                          style={{ width: '24px', height: '24px', padding: 0, border: '1px solid rgba(255,80,80,0.2)', background: 'transparent', cursor: 'pointer' }}
-                        >
-                          <Trash2 size={12} color="#ff5050" />
-                        </button>
                         <ChevronDown
                           size={16}
                           style={{
@@ -1618,30 +1664,32 @@ function App() {
                     </div>
 
                     {/* Key Metrics Grid - Compact */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr 0.8fr', gap: '6px', marginBottom: '0' }}>
-                      {/* Market Cap */}
-                      <div style={{ background: 'rgba(255,255,255,0.02)', padding: '6px', borderRadius: '4px' }}>
-                        <div style={{ fontSize: '0.6rem', color: '#666', marginBottom: '2px' }}>MCAP</div>
-                        <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#00C6FF' }}>
-                          {formatMcap(token.mcap)}
-                        </div>
-                      </div>
-
-                      {/* Holders with Refresh */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 0.8fr', gap: '6px', marginBottom: '0' }}>
+                      {/* MCAP & Holders */}
                       <div style={{ background: 'rgba(255,255,255,0.02)', padding: '6px', borderRadius: '4px', position: 'relative' }}>
-                        <div style={{ fontSize: '0.6rem', color: '#666', marginBottom: '2px' }}>HOLDERS</div>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#10b981' }}>
-                            {token.holders ? token.holders : '-'}
-                          </div>
+                        <div style={{ fontSize: '0.6rem', color: '#666', marginBottom: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span>MCAP | HOLDERS</span>
                           <button
                             className={`btn-icon-small ${token.force_holder_refresh ? 'loading' : ''}`}
                             onClick={(e) => handleManualRefresh(e, token.token_id)}
                             disabled={token.force_holder_refresh}
-                            style={{ width: '16px', height: '16px', padding: 0, border: 'none', background: 'transparent' }}
+                            title="Refresh Holders"
+                            style={{ width: '12px', height: '12px', padding: 0, border: 'none', background: 'transparent' }}
                           >
                             <RefreshCw size={10} className={token.force_holder_refresh ? 'animate-spin' : ''} style={{ opacity: 0.7 }} />
                           </button>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#00C6FF' }}>
+                            {formatMcap(token.mcap)}
+                          </span>
+                          <span style={{ fontSize: '0.85rem', color: '#666' }}>|</span>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#10b981' }}>
+                            {token.holders ? token.holders : '-'}
+                          </span>
+                          <span style={{ fontSize: '0.55rem', color: '#666', opacity: 0.8, marginLeft: 'auto' }}>
+                            {formatTimeAgo(token.holders_updated_at)}
+                          </span>
                         </div>
                       </div>
 
@@ -1665,6 +1713,37 @@ function App() {
                     {/* Expanded Details */}
                     {expandedToken === token.token_id && (
                       <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #222' }}>
+
+                        {/* Action Icons */}
+                        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', alignItems: 'center' }}>
+                          <button
+                            className="btn-icon-small"
+                            onClick={(e) => handleOpenAllLinks(e, token.tokens.contract_address)}
+                            title="Open All Links"
+                            style={{ width: '28px', height: '28px', padding: 0, background: 'rgba(0,198,255,0.05)', border: '1px solid rgba(0,198,255,0.2)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                          >
+                            <Layers size={14} color="#00C6FF" />
+                          </button>
+                          <a
+                            href={`https://solscan.io/token/${token.tokens.contract_address}#holders`}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            title="Solscan Holders"
+                            style={{ width: '28px', height: '28px', padding: 0, background: 'rgba(0,198,255,0.05)', border: '1px solid rgba(0,198,255,0.2)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                          >
+                            <Search size={14} color="#00C6FF" />
+                          </a>
+                          <button
+                            className="btn-icon-small"
+                            onClick={(e) => handleBlacklistToken(e, token.token_id)}
+                            title="Remove permanently"
+                            style={{ width: '28px', height: '28px', padding: 0, background: 'rgba(255,80,80,0.05)', border: '1px solid rgba(255,80,80,0.2)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                          >
+                            <Trash2 size={14} color="#ff5050" />
+                          </button>
+                        </div>
+
                         {metaLoading[token.tokens.contract_address] ? (
                           <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
                             <div className="animate-spin" style={{ display: 'inline-block' }}>⟳</div>
@@ -1744,6 +1823,43 @@ function App() {
                             </div>
                           </div>
                         ) : null}
+
+                        {/* Mobile Token Details */}
+                        <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px dashed #333' }}>
+                          <h4 style={{ margin: '0 0 12px 0', color: '#00C6FF', fontSize: '0.85rem' }}>Token Details</h4>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <span style={{ color: '#888', fontSize: '0.75rem' }}>Created At:</span>
+                              <span style={{ color: '#fff', fontSize: '0.75rem' }}>
+                                {tokenMetadata[token.tokens.contract_address]?.pairCreatedAt
+                                  ? formatDetailedTimeAgo(tokenMetadata[token.tokens.contract_address].pairCreatedAt)
+                                  : new Date(token.tokens.found_at).toLocaleString()}
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <span style={{ color: '#888', fontSize: '0.75rem' }}>Found At:</span>
+                              <span style={{ color: '#00C6FF', fontSize: '0.75rem', fontWeight: 600 }}>
+                                {token.tokens.found_at ? formatDetailedTimeAgo(new Date(token.tokens.found_at).getTime()) : 'N/A'}
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <span style={{ color: '#888', fontSize: '0.75rem' }}>Found At Mc:</span>
+                              <span style={{ color: '#00C6FF', fontSize: '0.75rem', fontWeight: 600 }}>
+                                {token.tokens.found_at_mcap != null ? formatMcap(token.tokens.found_at_mcap) : 'N/A'}
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <span style={{ color: '#888', fontSize: '0.75rem' }}>Found At Holders:</span>
+                              <span style={{ color: '#10b981', fontSize: '0.75rem', fontWeight: 600 }}>
+                                {token.tokens.found_at_holders != null ? token.tokens.found_at_holders : 'N/A'}
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <span style={{ color: '#888', fontSize: '0.75rem' }}>Strategy:</span>
+                              <span style={{ color: '#fff', fontSize: '0.75rem' }}>{strategies.find(s => s.id === token.strategy_id)?.name || 'Unknown'}</span>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
