@@ -944,7 +944,7 @@ function App() {
                 Holder updates are currently paused.
                 {botSettings?.moralis_error_at && (
                   <span style={{ marginLeft: '8px', fontWeight: 600 }}>
-                    Error occurred at: {new Date(botSettings.moralis_error_at).toLocaleString()}
+                    Error occurred at: {new Date(botSettings.moralis_error_at).toLocaleString('en-US', { timeZone: 'Asia/Colombo' })}
                   </span>
                 )}
               </p>

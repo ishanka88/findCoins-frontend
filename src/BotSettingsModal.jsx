@@ -1,6 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { X, Settings, Trash2, Plus } from 'lucide-react';
+import { X, Settings, Trash2, Plus, Zap } from 'lucide-react';
 import { supabase } from './supabaseClient';
+
+// Helper for relative time (e.g., "1m ago", "3h ago")
+function formatTimeAgo(timestamp) {
+    if (!timestamp) return 'Never';
+    const now = new Date();
+    const past = new Date(timestamp);
+    const diffInMs = now - past;
+    const diffInSecs = Math.floor(diffInMs / 1000);
+    const diffInMins = Math.floor(diffInSecs / 60);
+    const diffInHours = Math.floor(diffInMins / 60);
+    const diffInDays = Math.floor(diffInHours / 24);
+
+    if (diffInSecs < 60) return 'just now';
+    if (diffInMins < 60) return `${diffInMins}m ago`;
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    return `${diffInDays}d ago`;
+}
 
 export function BotSettingsModal({ onClose }) {
     const [settings, setSettings] = useState({
@@ -13,6 +30,29 @@ export function BotSettingsModal({ onClose }) {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [addingKey, setAddingKey] = useState(false);
+    const [checkingKeys, setCheckingKeys] = useState({}); // { id: boolean }
+    const [timeLeftToReset, setTimeLeftToReset] = useState('');
+
+    useEffect(() => {
+        const calculateTimeLeft = () => {
+            const now = new Date();
+            const tomorrow = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+            const diffInMs = tomorrow - now;
+
+            const hours = Math.floor(diffInMs / (1000 * 60 * 60));
+            const minutes = Math.floor((diffInMs % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diffInMs % (1000 * 60)) / 1000);
+
+            return `${String(hours).padStart(2, '0')}H :${String(minutes).padStart(2, '0')}M:${String(seconds).padStart(2, '0')}S`;
+        };
+
+        setTimeLeftToReset(calculateTimeLeft());
+        const timer = setInterval(() => {
+            setTimeLeftToReset(calculateTimeLeft());
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, []);
 
     useEffect(() => {
         loadData();
@@ -116,6 +156,51 @@ export function BotSettingsModal({ onClose }) {
         }
     }
 
+    async function checkKeyStatus(keyRecord) {
+        if (!keyRecord?.key) return;
+
+        setCheckingKeys(prev => ({ ...prev, [keyRecord.id]: true }));
+        try {
+            const url = `https://solana-gateway.moralis.io/token/mainnet/holders/So11111111111111111111111111111111111111112`;
+            const resp = await fetch(url, {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-API-Key': keyRecord.key
+                }
+            });
+
+            const statusMessages = {
+                200: "ok",
+                400: "Bad Request",
+                404: "Not Found",
+                429: "Too Many Requests",
+                500: "Internal Server Error",
+                401: "Validation service blocked: Your plan: free-plan-daily total included usage has been consumed, please upgrade your plan here,"
+            };
+
+            const msg = statusMessages[resp.status] || `Unexpected Status: ${resp.status}`;
+
+            if (resp.status === 200) {
+                alert(`Status 200: ${msg}`);
+            } else {
+                alert(`Status ${resp.status}: ${msg}\n\nDetailed log opened in a new tab.`);
+                try {
+                    const errorData = await resp.json();
+                    const blob = new Blob([JSON.stringify(errorData, null, 2)], { type: 'application/json' });
+                    const blobUrl = URL.createObjectURL(blob);
+                    window.open(blobUrl, '_blank');
+                } catch (e) {
+                    // If no JSON, just open the raw text if possible 
+                }
+            }
+        } catch (error) {
+            console.error('Error checking key status:', error);
+            alert('Failed to check key status: ' + error.message);
+        } finally {
+            setCheckingKeys(prev => ({ ...prev, [keyRecord.id]: false }));
+        }
+    }
+
     async function handleSave() {
         setSaving(true);
         try {
@@ -139,6 +224,8 @@ export function BotSettingsModal({ onClose }) {
     }
 
     const totalUsage = Array.isArray(keys) ? keys.reduce((acc, k) => acc + (k.usage_count || 0), 0) : 0;
+    const activeKeysCount = Array.isArray(keys) ? keys.filter(k => k.status === 'active').length : 0;
+    const totalKeysCount = Array.isArray(keys) ? keys.length : 0;
 
     return (
         <div style={{
@@ -214,8 +301,11 @@ export function BotSettingsModal({ onClose }) {
                         {/* MORALIS KEYS SECTION */}
                         <div style={{ borderTop: '1px solid #333', paddingTop: '20px', marginBottom: '20px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                                <h4 style={{ margin: 0, color: '#00C6FF', fontSize: '0.95rem' }}>Moralis API Keys</h4>
-                                <span style={{ fontSize: '0.8rem', color: '#888' }}>Total Requests: {totalUsage}</span>
+                                <h4 style={{ margin: 0, color: '#00C6FF', fontSize: '0.95rem' }}>Moralis API Keys ({activeKeysCount}/{totalKeysCount})</h4>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
+                                    <span style={{ fontSize: '0.8rem', color: '#888' }}>Total Requests: {totalUsage}</span>
+                                    <span style={{ fontSize: '0.75rem', color: '#666', fontStyle: 'italic' }}>Daily Reset in: {timeLeftToReset}</span>
+                                </div>
                             </div>
 
                             <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
@@ -268,17 +358,41 @@ export function BotSettingsModal({ onClose }) {
                                                         </span>
                                                         <span style={{ color: '#666' }}>•</span>
                                                         <span style={{ color: '#ccc' }}>{k?.usage_count || 0} reqs</span>
+                                                        <span style={{ color: '#666' }}>•</span>
+                                                        <span style={{ color: '#888', fontStyle: 'italic' }}>{formatTimeAgo(k?.last_used_at)}</span>
                                                         {k?.is_current && <span style={{ color: '#00C6FF', fontWeight: '600' }}>• CURRENT</span>}
                                                     </div>
                                                 </div>
                                             </div>
-                                            <button
-                                                onClick={() => handleDeleteKey(k?.id)}
-                                                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
-                                                title="Delete Key"
-                                            >
-                                                <Trash2 size={14} color="#666" className="hover-red" />
-                                            </button>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <button
+                                                    onClick={() => checkKeyStatus(k)}
+                                                    disabled={checkingKeys[k.id]}
+                                                    style={{
+                                                        background: 'rgba(0, 198, 255, 0.1)',
+                                                        border: '1px solid rgba(0, 198, 255, 0.3)',
+                                                        borderRadius: '4px',
+                                                        padding: '4px 8px',
+                                                        color: '#00C6FF',
+                                                        fontSize: '0.7rem',
+                                                        cursor: checkingKeys[k.id] ? 'not-allowed' : 'pointer',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '4px'
+                                                    }}
+                                                    title="Check Key Status"
+                                                >
+                                                    <Zap size={10} fill={checkingKeys[k.id] ? 'none' : '#00C6FF'} />
+                                                    {checkingKeys[k.id] ? '...' : 'Check'}
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteKey(k?.id)}
+                                                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
+                                                    title="Delete Key"
+                                                >
+                                                    <Trash2 size={14} color="#666" className="hover-red" />
+                                                </button>
+                                            </div>
                                         </div>
                                     ))
                                 )}
