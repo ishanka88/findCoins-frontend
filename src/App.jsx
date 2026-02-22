@@ -7,6 +7,7 @@ import { BotSettingsModal } from './BotSettingsModal';
 import { HolderRefreshRulesModal } from './HolderRefreshRulesModal';
 import { BotActivityLog } from './BotActivityLog';
 import { Login } from './Login';
+import { SaveViewOptionsModal } from './SaveViewOptionsModal';
 
 // Helper for detailed time ago (e.g., "1 month and 4 days ago")
 function formatDetailedTimeAgo(timestamp) {
@@ -133,6 +134,7 @@ function App() {
   const [searchPerformed, setSearchPerformed] = useState(false);
   const [checkingKey, setCheckingKey] = useState(false);
   const [verifiedKey, setVerifiedKey] = useState(false);
+  const [showSaveOptions, setShowSaveOptions] = useState(false);
   const [detailsToken, setDetailsToken] = useState(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [minimizedStrats, setMinimizedStrats] = useState({});
@@ -614,6 +616,32 @@ function App() {
     return valA < valB ? 1 : -1;
   });
 
+  const handleSaveViewClick = () => {
+    if (activeViewId === 'all') {
+      setIsSavingView(true);
+    } else {
+      setShowSaveOptions(true);
+    }
+  };
+
+  const handleUpdateView = async () => {
+    try {
+      const { error } = await supabase
+        .from('saved_views')
+        .update({ filters: customFilters })
+        .eq('id', activeViewId);
+
+      if (error) throw error;
+
+      setSavedViews(prev => prev.map(v => v.id === activeViewId ? { ...v, filters: customFilters } : v));
+      setShowSaveOptions(false);
+      alert('View updated successfully!');
+    } catch (err) {
+      console.error("Update View Error:", err);
+      alert('Failed to update view: ' + err.message);
+    }
+  };
+
   const handleSaveView = async () => {
     if (!viewName.trim() || customFilters.length === 0) return;
 
@@ -670,6 +698,10 @@ function App() {
   };
 
   const selectView = (view) => {
+    setIsSavingView(false);
+    setViewName('');
+    setShowSaveOptions(false);
+
     if (view === 'all') {
       setActiveViewId('all');
       setCustomFilters([]);
@@ -893,6 +925,18 @@ function App() {
 
       {showSettingsModal && (
         <BotSettingsModal onClose={() => setShowSettingsModal(false)} />
+      )}
+
+      {showSaveOptions && (
+        <SaveViewOptionsModal
+          viewName={savedViews.find(v => v.id === activeViewId)?.name || 'Current'}
+          onClose={() => setShowSaveOptions(false)}
+          onUpdate={handleUpdateView}
+          onSaveAsNew={() => {
+            setShowSaveOptions(false);
+            setIsSavingView(true);
+          }}
+        />
       )}
 
       {showHolderRulesModal && (
@@ -1350,9 +1394,9 @@ function App() {
               </div>
 
               <div style={{ display: 'flex', gap: '8px', width: '100%', alignItems: 'center', justifyContent: 'space-between' }}>
-                {isViewModified() && !isSavingView && (
+                {isViewModified() && !isSavingView && !showSaveOptions && (
                   <button
-                    onClick={() => setIsSavingView(true)}
+                    onClick={handleSaveViewClick}
                     className="btn-primary"
                     style={{ flex: 1, height: '30px', padding: '0 4px', fontSize: '0.8rem', fontWeight: '800', justifyContent: 'center', display: 'flex', alignItems: 'center', minWidth: 0, textTransform: 'uppercase' }}
                   >
