@@ -2036,11 +2036,11 @@ function App() {
                           </button>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#00C6FF' }}>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#f59e0b' }}>
                             {formatMcap(token.mcap)}
                           </span>
                           <span style={{ fontSize: '0.85rem', color: '#666' }}>|</span>
-                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#10b981' }}>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#10b981' }}>
                             {token.holders ? token.holders : '-'}
                           </span>
                           {(() => {
@@ -2063,7 +2063,7 @@ function App() {
                       {/* Volume */}
                       <div style={{ background: 'rgba(255,255,255,0.02)', padding: '6px', borderRadius: '4px' }}>
                         <div style={{ fontSize: '0.6rem', color: '#666', marginBottom: '2px' }}>VOL</div>
-                        <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#f59e0b' }}>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 400, color: '#00C6FF' }}>
                           {formatMcap(token.volume)}
                         </div>
                       </div>
@@ -2071,7 +2071,7 @@ function App() {
                       {/* Price Change */}
                       <div style={{ background: 'rgba(255,255,255,0.02)', padding: '6px', borderRadius: '4px' }}>
                         <div style={{ fontSize: '0.6rem', color: '#666', marginBottom: '2px' }}>24H</div>
-                        <div style={{ fontSize: '0.75rem', fontWeight: 600, color: token.change_h24 >= 0 ? '#10b981' : '#ef4444' }}>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 400, color: token.change_h24 >= 0 ? '#10b981' : '#ef4444' }}>
                           {token.change_h24?.toFixed(1)}%
                         </div>
                       </div>
