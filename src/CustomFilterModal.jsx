@@ -44,6 +44,7 @@ export function CustomFilterModal({ onClose, onAdd }) {
         { id: 'mcap', label: 'Market Cap' },
         { id: 'found_at_mcap', label: 'Found At MC' },
         { id: 'holders', label: 'Holders (If available)' },
+        { id: 'found_at_holders', label: 'Found At Holders' },
         { id: 'holders_ratio', label: 'Holders Change % (Current vs Found)' },
         { id: 'liquidity', label: 'Liquidity' },
         { id: 'volume', label: 'Volume (24h)' },

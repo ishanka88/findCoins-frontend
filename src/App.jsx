@@ -131,6 +131,8 @@ function App() {
   const [dbResults, setDbResults] = useState([]);
   const [searchingDb, setSearchingDb] = useState(false);
   const [searchPerformed, setSearchPerformed] = useState(false);
+  const [checkingKey, setCheckingKey] = useState(false);
+  const [verifiedKey, setVerifiedKey] = useState(false);
   const [detailsToken, setDetailsToken] = useState(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [minimizedStrats, setMinimizedStrats] = useState({});
@@ -520,6 +522,10 @@ function App() {
       else if (f.field === 'volume') val = t.volume;
       else if (f.field === 'change_h24') val = t.change_h24;
       else if (f.field === 'holders') val = t.holders;
+      else if (f.field === 'found_at_holders') {
+        if (!t.tokens?.found_at_holders) return false;
+        val = t.tokens.found_at_holders;
+      }
       else if (f.field === 'price') val = t.price;
       else if (f.field === 'found_at_minutes') {
         if (!t.tokens?.found_at) return false;
@@ -673,8 +679,8 @@ function App() {
     }
   };
 
-  const removeFilterCondition = (index) => {
-    setCustomFilters(prev => prev.filter((_, i) => i !== index));
+  const removeFilterCondition = (id) => {
+    setCustomFilters(prev => prev.filter((f) => f.id !== id));
     // If we're on a saved view but modify it, we essentially "detach" from the view ID 
     // or we mark it as unsaved. For now, let's keep the ID but the Save button will appear later.
   };
@@ -710,6 +716,77 @@ function App() {
     if (num < 1) return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 6 }).format(num);
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(num);
   };
+
+  const checkCurrentKeyStatus = async () => {
+    // 1. Get current key
+    const { data: keys } = await supabase
+      .from('moralis_keys')
+      .select('*')
+      .eq('is_current', true)
+      .limit(1);
+
+    if (!keys || keys.length === 0) {
+      alert("No current API key found.");
+      return;
+    }
+
+    const keyRecord = keys[0];
+    setCheckingKey(true);
+    try {
+      const url = `https://solana-gateway.moralis.io/token/mainnet/holders/So11111111111111111111111111111111111111112`;
+      const resp = await fetch(url, {
+        headers: {
+          'Accept': 'application/json',
+          'X-API-Key': keyRecord.key
+        }
+      });
+
+      if (resp.status === 200) {
+        setVerifiedKey(true);
+        alert("Status 200: Key is working correctly!");
+      } else {
+        alert(`Status ${resp.status}: Check failed.`);
+      }
+    } catch (error) {
+      console.error('Error checking key status:', error);
+      alert('Failed to check key status: ' + error.message);
+    } finally {
+      setCheckingKey(false);
+    }
+  };
+
+  const handleActivateKeyFromBanner = async () => {
+    // 1. Get current key
+    const { data: keys } = await supabase
+      .from('moralis_keys')
+      .select('id')
+      .eq('is_current', true)
+      .limit(1);
+
+    if (!keys || keys.length === 0) return;
+    const keyId = keys[0].id;
+
+    try {
+      // Set key to active
+      await supabase
+        .from('moralis_keys')
+        .update({ status: 'active' })
+        .eq('id', keyId);
+
+      // Reset global bot settings
+      await supabase
+        .from('bot_settings')
+        .update({ moralis_api_status: 'ok' })
+        .eq('id', 1);
+
+      setVerifiedKey(false);
+      fetchData();
+    } catch (error) {
+      console.error('Error activating key:', error);
+      alert('Failed to activate key: ' + error.message);
+    }
+  };
+
   const isBotOnline = () => {
     if (!botSettings?.last_heartbeat) return false;
     const last = new Date(botSettings.last_heartbeat);
@@ -949,20 +1026,58 @@ function App() {
                 )}
               </p>
             </div>
-            <button
-              onClick={fetchData}
-              style={{
-                background: 'rgba(255,255,255,0.1)',
-                border: '1px solid rgba(255,255,255,0.2)',
-                color: 'white',
-                padding: '6px 12px',
-                borderRadius: '6px',
-                fontSize: '0.8rem',
-                cursor: 'pointer'
-              }}
-            >
-              Retry Connection
-            </button>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={checkCurrentKeyStatus}
+                disabled={checkingKey}
+                style={{
+                  background: 'rgba(0, 198, 255, 0.1)',
+                  border: '1px solid rgba(0, 198, 255, 0.3)',
+                  color: '#00C6FF',
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  fontSize: '0.8rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+              >
+                <Zap size={14} fill={checkingKey ? 'none' : '#00C6FF'} />
+                {checkingKey ? 'Checking...' : 'Check'}
+              </button>
+
+              <button
+                onClick={handleActivateKeyFromBanner}
+                disabled={!verifiedKey}
+                style={{
+                  background: verifiedKey ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid ' + (verifiedKey ? '#10b981' : '#444'),
+                  color: verifiedKey ? '#10b981' : '#666',
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  fontSize: '0.8rem',
+                  cursor: verifiedKey ? 'pointer' : 'not-allowed'
+                }}
+              >
+                Activate
+              </button>
+
+              <button
+                onClick={fetchData}
+                style={{
+                  background: 'rgba(255,255,255,0.1)',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  color: 'white',
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  fontSize: '0.8rem',
+                  cursor: 'pointer'
+                }}
+              >
+                Retry Connection
+              </button>
+            </div>
           </div>
         )}
 
@@ -1312,12 +1427,64 @@ function App() {
           {customFilters.length > 0 && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px dashed #333' }}>
               <span style={{ fontSize: '0.75rem', color: '#666', marginRight: '4px', alignSelf: 'center' }}>Active Filters:</span>
-              {customFilters.map((f, i) => (
-                <div key={i} className="filter-chip">
-                  <span>{f.field} {f.operator} {formatNumber(f.value)}</span>
-                  <button onClick={() => removeFilterCondition(i)}>✕</button>
-                </div>
-              ))}
+              {/* Combined Range Filter Chips */}
+              {(() => {
+                const grouped = customFilters.reduce((acc, f) => {
+                  if (!acc[f.field]) acc[f.field] = [];
+                  acc[f.field].push(f);
+                  return acc;
+                }, {});
+
+                const priorityMap = { 'mcap': 1, 'found_at_mcap': 2, 'holders': 3, 'found_at_holders': 4 };
+                const sortedFields = Object.keys(grouped).sort((a, b) => (priorityMap[a] || 99) - (priorityMap[b] || 99));
+
+                return sortedFields.map(fieldName => {
+                  const fieldFilters = grouped[fieldName];
+                  const lowBound = fieldFilters.find(f => f.operator === '>');
+                  const highBound = fieldFilters.find(f => f.operator === '<');
+                  const others = fieldFilters.filter(f => f.operator !== '>' && f.operator !== '<');
+
+                  const chips = [];
+
+                  if (lowBound && highBound) {
+                    chips.push(
+                      <div key={`${fieldName}-range`} className="filter-chip" style={{ gap: '6px' }}>
+                        <button onClick={() => removeFilterCondition(lowBound.id)} title="Remove lower bound">✕</button>
+                        <span>{formatNumber(lowBound.value)} &lt; {fieldName} &lt; {formatNumber(highBound.value)}</span>
+                        <button onClick={() => removeFilterCondition(highBound.id)} title="Remove upper bound">✕</button>
+                      </div>
+                    );
+                  } else {
+                    if (lowBound) {
+                      chips.push(
+                        <div key={lowBound.id} className="filter-chip">
+                          <button onClick={() => removeFilterCondition(lowBound.id)} title="Remove condition">✕</button>
+                          <span>{formatNumber(lowBound.value)} &lt; {fieldName}</span>
+                        </div>
+                      );
+                    }
+                    if (highBound) {
+                      chips.push(
+                        <div key={highBound.id} className="filter-chip">
+                          <span>{fieldName} &lt; {formatNumber(highBound.value)}</span>
+                          <button onClick={() => removeFilterCondition(highBound.id)} title="Remove condition">✕</button>
+                        </div>
+                      );
+                    }
+                  }
+
+                  others.forEach(f => {
+                    chips.push(
+                      <div key={f.id} className="filter-chip">
+                        <span>{f.field} {f.operator} {formatNumber(f.value)}</span>
+                        <button onClick={() => removeFilterCondition(f.id)}>✕</button>
+                      </div>
+                    );
+                  });
+
+                  return chips;
+                });
+              })()}
               <button
                 onClick={() => { setCustomFilters([]); setActiveViewId('all'); }}
                 style={{ background: 'transparent', border: 'none', color: '#ef4444', fontSize: '0.75rem', cursor: 'pointer', marginLeft: 'auto' }}

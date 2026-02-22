@@ -31,6 +31,7 @@ export function BotSettingsModal({ onClose }) {
     const [saving, setSaving] = useState(false);
     const [addingKey, setAddingKey] = useState(false);
     const [checkingKeys, setCheckingKeys] = useState({}); // { id: boolean }
+    const [verifiedKeys, setVerifiedKeys] = useState({}); // { id: boolean }
     const [timeLeftToReset, setTimeLeftToReset] = useState('');
 
     useEffect(() => {
@@ -181,6 +182,7 @@ export function BotSettingsModal({ onClose }) {
             const msg = statusMessages[resp.status] || `Unexpected Status: ${resp.status}`;
 
             if (resp.status === 200) {
+                setVerifiedKeys(prev => ({ ...prev, [keyRecord.id]: true }));
                 alert(`Status 200: ${msg}`);
             } else {
                 alert(`Status ${resp.status}: ${msg}\n\nDetailed log opened in a new tab.`);
@@ -198,6 +200,32 @@ export function BotSettingsModal({ onClose }) {
             alert('Failed to check key status: ' + error.message);
         } finally {
             setCheckingKeys(prev => ({ ...prev, [keyRecord.id]: false }));
+        }
+    }
+
+    async function handleActivateKey(id) {
+        setSaving(true);
+        try {
+            const { error } = await supabase
+                .from('moralis_keys')
+                .update({ status: 'active' })
+                .eq('id', id);
+
+            if (error) throw error;
+
+            // Clear verification state for this key
+            setVerifiedKeys(prev => {
+                const updated = { ...prev };
+                delete updated[id];
+                return updated;
+            });
+
+            fetchKeys();
+        } catch (error) {
+            console.error('Error activating key:', error);
+            alert('Failed to activate key: ' + error.message);
+        } finally {
+            setSaving(false);
         }
     }
 
@@ -384,6 +412,27 @@ export function BotSettingsModal({ onClose }) {
                                                 >
                                                     <Zap size={10} fill={checkingKeys[k.id] ? 'none' : '#00C6FF'} />
                                                     {checkingKeys[k.id] ? '...' : 'Check'}
+                                                </button>
+                                                <button
+                                                    onClick={() => handleActivateKey(k.id)}
+                                                    disabled={saving || !verifiedKeys[k.id] || k.status === 'active'}
+                                                    style={{
+                                                        background: (verifiedKeys[k.id] && k.status !== 'active')
+                                                            ? 'rgba(16, 185, 129, 0.2)'
+                                                            : 'rgba(255, 255, 255, 0.05)',
+                                                        border: '1px solid ' + ((verifiedKeys[k.id] && k.status !== 'active') ? '#10b981' : '#444'),
+                                                        borderRadius: '4px',
+                                                        padding: '4px 8px',
+                                                        color: (verifiedKeys[k.id] && k.status !== 'active') ? '#10b981' : '#666',
+                                                        fontSize: '0.7rem',
+                                                        cursor: (saving || !verifiedKeys[k.id] || k.status === 'active') ? 'not-allowed' : 'pointer',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '4px'
+                                                    }}
+                                                    title={k.status === 'active' ? 'Key is already active' : (verifiedKeys[k.id] ? 'Activate Key' : 'Check key first to activate')}
+                                                >
+                                                    Activate
                                                 </button>
                                                 <button
                                                     onClick={() => handleDeleteKey(k?.id)}
