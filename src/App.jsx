@@ -270,7 +270,16 @@ function App() {
           is_blacklisted,
           found_at,
           found_at_mcap,
-          found_at_holders
+          found_at_holders,
+          found_at_price,
+          found_at_liquidity,
+          found_at_volume,
+          found_at_txns,
+          found_at_makers,
+          found_at_change_m5,
+          found_at_change_h1,
+          found_at_change_h6,
+          found_at_change_h24
         )
       `)
       .order('last_scraped_at', { ascending: false });
@@ -1854,9 +1863,36 @@ function App() {
                                     </span>
                                   </div>
                                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <span style={{ color: '#888', fontSize: '0.8rem' }}>Found At Holders:</span>
-                                    <span style={{ color: '#10b981', fontSize: '0.8rem', fontWeight: 600 }}>
-                                      {token.tokens.found_at_holders != null ? token.tokens.found_at_holders : 'N/A'}
+                                    <span style={{ color: '#888', fontSize: '0.8rem' }}>Found At Price:</span>
+                                    <span style={{ color: '#00C6FF', fontSize: '0.8rem', fontWeight: 600 }}>
+                                      {token.tokens.found_at_price != null ? `$${token.tokens.found_at_price.toFixed(6)}` : 'N/A'}
+                                    </span>
+                                  </div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ color: '#888', fontSize: '0.8rem' }}>Found At Mc|Liq:</span>
+                                    <span style={{ color: '#fff', fontSize: '0.8rem', fontWeight: 600 }}>
+                                      {token.tokens.found_at_mcap != null ? formatMcap(token.tokens.found_at_mcap) : 'N/A'} | {token.tokens.found_at_liquidity != null ? formatMcap(token.tokens.found_at_liquidity) : 'N/A'}
+                                    </span>
+                                  </div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ color: '#888', fontSize: '0.8rem' }}>Found Vol | Txns:</span>
+                                    <span style={{ color: '#fff', fontSize: '0.8rem' }}>
+                                      {token.tokens.found_at_volume != null ? formatMcap(token.tokens.found_at_volume) : '0'} | {token.tokens.found_at_txns != null ? formatNumber(token.tokens.found_at_txns) : '0'}
+                                    </span>
+                                  </div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ color: '#888', fontSize: '0.8rem' }}>Found Makers:</span>
+                                    <span style={{ color: '#fff', fontSize: '0.8rem' }}>
+                                      {token.tokens.found_at_makers != null ? formatNumber(token.tokens.found_at_makers) : '0'}
+                                    </span>
+                                  </div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ color: '#888', fontSize: '0.8rem' }}>Found Chg (5m/1h/6h/24h):</span>
+                                    <span style={{ fontSize: '0.8rem' }}>
+                                      <span style={{ color: token.tokens.found_at_change_m5 >= 0 ? '#10b981' : '#ef4444' }}>{token.tokens.found_at_change_m5?.toFixed(1)}%</span> /
+                                      <span style={{ color: token.tokens.found_at_change_h1 >= 0 ? '#10b981' : '#ef4444' }}> {token.tokens.found_at_change_h1?.toFixed(1)}%</span> /
+                                      <span style={{ color: token.tokens.found_at_change_h6 >= 0 ? '#10b981' : '#ef4444' }}> {token.tokens.found_at_change_h6?.toFixed(1)}%</span> /
+                                      <span style={{ color: token.tokens.found_at_change_h24 >= 0 ? '#10b981' : '#ef4444' }}> {token.tokens.found_at_change_h24?.toFixed(1)}%</span>
                                     </span>
                                   </div>
                                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -2210,15 +2246,36 @@ function App() {
                               </span>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                              <span style={{ color: '#888', fontSize: '0.75rem' }}>Found At Mc:</span>
+                              <span style={{ color: '#888', fontSize: '0.75rem' }}>Found At Price:</span>
                               <span style={{ color: '#00C6FF', fontSize: '0.75rem', fontWeight: 600 }}>
-                                {token.tokens.found_at_mcap != null ? formatMcap(token.tokens.found_at_mcap) : 'N/A'}
+                                {token.tokens.found_at_price != null ? `$${token.tokens.found_at_price.toFixed(6)}` : 'N/A'}
                               </span>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                              <span style={{ color: '#888', fontSize: '0.75rem' }}>Found At Holders:</span>
-                              <span style={{ color: '#10b981', fontSize: '0.75rem', fontWeight: 600 }}>
-                                {token.tokens.found_at_holders != null ? token.tokens.found_at_holders : 'N/A'}
+                              <span style={{ color: '#888', fontSize: '0.75rem' }}>Found At Mc|Liq:</span>
+                              <span style={{ color: '#fff', fontSize: '0.75rem', fontWeight: 600 }}>
+                                {token.tokens.found_at_mcap != null ? formatMcap(token.tokens.found_at_mcap) : 'N/A'} | {token.tokens.found_at_liquidity != null ? formatMcap(token.tokens.found_at_liquidity) : 'N/A'}
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <span style={{ color: '#888', fontSize: '0.75rem' }}>Found Vol | Txns:</span>
+                              <span style={{ color: '#fff', fontSize: '0.7rem' }}>
+                                {token.tokens.found_at_volume != null ? formatMcap(token.tokens.found_at_volume) : '0'} | {token.tokens.found_at_txns != null ? formatNumber(token.tokens.found_at_txns) : '0'}
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <span style={{ color: '#888', fontSize: '0.75rem' }}>Found Makers:</span>
+                              <span style={{ color: '#fff', fontSize: '0.7rem' }}>
+                                {token.tokens.found_at_makers != null ? formatNumber(token.tokens.found_at_makers) : '0'}
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <span style={{ color: '#888', fontSize: '0.75rem' }}>Found Chg (5m/1/6/24h):</span>
+                              <span style={{ fontSize: '0.7rem' }}>
+                                <span style={{ color: token.tokens.found_at_change_m5 >= 0 ? '#10b981' : '#ef4444' }}>{token.tokens.found_at_change_m5?.toFixed(1)}%</span> /
+                                <span style={{ color: token.tokens.found_at_change_h1 >= 0 ? '#10b981' : '#ef4444' }}> {token.tokens.found_at_change_h1?.toFixed(1)}%</span> /
+                                <span style={{ color: token.tokens.found_at_change_h6 >= 0 ? '#10b981' : '#ef4444' }}> {token.tokens.found_at_change_h6?.toFixed(1)}%</span> /
+                                <span style={{ color: token.tokens.found_at_change_h24 >= 0 ? '#10b981' : '#ef4444' }}> {token.tokens.found_at_change_h24?.toFixed(1)}%</span>
                               </span>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
