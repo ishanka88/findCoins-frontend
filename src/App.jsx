@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from './supabaseClient';
-import { Activity, ShieldAlert, Coins, RefreshCw, ExternalLink, Layers, Plus, Filter, Zap, Pen, Edit, Settings, ChevronDown, ChevronUp, Twitter, Globe, Copy, MessageCircle, Send, LogOut, Trash2, ShieldCheck, Search, Check, X } from 'lucide-react';
+import { Activity, Star, ShieldAlert, Coins, RefreshCw, ExternalLink, Layers, Plus, Filter, Zap, Pen, Edit, Settings, ChevronDown, ChevronUp, Twitter, Globe, Copy, MessageCircle, Send, LogOut, Trash2, ShieldCheck, Search, Check, X } from 'lucide-react';
 import { CreateStrategyModal } from './CreateStrategyModal';
 import { CustomFilterModal } from './CustomFilterModal';
 import { BotSettingsModal } from './BotSettingsModal';
@@ -114,7 +114,7 @@ function App() {
 
   // Selection State
   const [selectedStratId, setSelectedStratId] = useState(null);
-  const [activeCategory] = useState('all'); // 'all', 'safe', 'degen'
+  const [activeCategory, setActiveCategory] = useState('all'); // 'all', 'favorites'
   const [expandedToken, setExpandedToken] = useState(null);
   const [tokenMetadata, setTokenMetadata] = useState({}); // Cache for metadata
   const [metaLoading, setMetaLoading] = useState({}); // Loading state per token
@@ -279,7 +279,9 @@ function App() {
           found_at_change_m5,
           found_at_change_h1,
           found_at_change_h6,
-          found_at_change_h24
+          found_at_change_h24,
+          is_favorite,
+          favorited_at
         )
       `)
       .order('last_scraped_at', { ascending: false });
@@ -460,6 +462,30 @@ function App() {
     }
   };
 
+  const handleToggleFavorite = async (e, token) => {
+    e.stopPropagation();
+    const newStatus = !token.tokens.is_favorite;
+    const now = newStatus ? new Date().toISOString() : null;
+
+    try {
+      const { error } = await supabase
+        .from('tokens')
+        .update({ is_favorite: newStatus, favorited_at: now })
+        .eq('contract_address', token.tokens.contract_address);
+
+      if (error) throw error;
+
+      // Update local state immediately for snappy UI
+      setTokens(prev => prev.map(t =>
+        t.token_id === token.token_id
+          ? { ...t, tokens: { ...t.tokens, is_favorite: newStatus, favorited_at: now } }
+          : t
+      ));
+    } catch (err) {
+      console.error("Favorite Error:", err);
+    }
+  };
+
   const handleCopy = (e, text, id) => {
     e.stopPropagation();
     if (!text) return;
@@ -589,6 +615,9 @@ function App() {
       return symbolMatch || caMatch;
     }
 
+    // Favorites Filter
+    if (activeCategory === 'favorites' && !t.tokens?.is_favorite) return false;
+
     // 2. Must match selected strategy (only if no search)
     if (selectedStratId && t.strategy_id !== selectedStratId) return false;
 
@@ -615,6 +644,9 @@ function App() {
       valB = calculateMcChange(b.mcap, b.tokens?.found_at_mcap);
       if (valA === null) valA = -Number.MAX_SAFE_INTEGER;
       if (valB === null) valB = -Number.MAX_SAFE_INTEGER;
+    } else if (sortBy === 'favorited_at') {
+      valA = a.tokens?.favorited_at ? new Date(a.tokens.favorited_at).getTime() : 0;
+      valB = b.tokens?.favorited_at ? new Date(b.tokens.favorited_at).getTime() : 0;
     }
 
     if (valA === valB) return 0;
@@ -1312,10 +1344,18 @@ function App() {
           <div className="filter-controls-container">
             <div className="filter-views-group">
               <button
-                onClick={() => selectView('all')}
-                className={`filter-btn ${activeViewId === 'all' ? 'active' : ''}`}
+                onClick={() => { selectView('all'); setActiveCategory('all'); }}
+                className={`filter-btn ${activeViewId === 'all' && activeCategory === 'all' ? 'active' : ''}`}
               >
                 All <span style={{ color: '#ef4444', fontWeight: 'bold', marginLeft: '4px' }}>({(tokens || []).length})</span>
+              </button>
+              <button
+                onClick={() => { selectView('all'); setActiveCategory('favorites'); setSortBy('favorited_at'); setSortOrder('desc'); }}
+                className={`filter-btn ${activeCategory === 'favorites' ? 'active' : ''}`}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <Star size={14} fill={activeCategory === 'favorites' ? "#f59e0b" : "none"} color={activeCategory === 'favorites' ? "#f59e0b" : "currentColor"} />
+                Favorites <span style={{ color: '#ef4444', fontWeight: 'bold' }}>({(tokens || []).filter(t => t.tokens?.is_favorite).length})</span>
               </button>
               {savedViews.filter(v => v.strategy_id === selectedStratId || !selectedStratId).map(view => (
                 <div key={view.id} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
@@ -1462,6 +1502,7 @@ function App() {
                   <option style={{ backgroundColor: '#1a1a1b', color: '#fff' }} value="dex_age-asc">Dex Age (New - Old)</option>
                   <option style={{ backgroundColor: '#1a1a1b', color: '#fff' }} value="found_at-desc">Found At (New - Old)</option>
                   <option style={{ backgroundColor: '#1a1a1b', color: '#fff' }} value="mc_ratio-desc">MC Change % (High - Low)</option>
+                  <option style={{ backgroundColor: '#1a1a1b', color: '#fff' }} value="favorited_at-desc">Recently Favorited</option>
                 </select>
 
                 <button
@@ -1599,6 +1640,27 @@ function App() {
                                 {token.tokens.symbol?.charAt(0)}
                               </div>
                             )}
+                            <button
+                              onClick={(e) => handleToggleFavorite(e, token)}
+                              style={{
+                                background: 'transparent',
+                                border: 'none',
+                                cursor: 'pointer',
+                                padding: '4px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                transition: 'transform 0.1s'
+                              }}
+                              onMouseDown={e => e.currentTarget.style.transform = 'scale(0.8)'}
+                              onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
+                            >
+                              <Star
+                                size={18}
+                                fill={token.tokens?.is_favorite ? "#f59e0b" : "none"}
+                                color={token.tokens?.is_favorite ? "#f59e0b" : "#444"}
+                              />
+                            </button>
                             <div>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
