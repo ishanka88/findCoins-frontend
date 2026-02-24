@@ -2073,6 +2073,24 @@ function App() {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span style={{ fontWeight: 'bold', color: '#fff', fontSize: '0.85rem' }}>{token.tokens.symbol}</span>
+                          <button
+                            onClick={(e) => handleToggleFavorite(e, token)}
+                            style={{
+                              background: 'transparent',
+                              border: 'none',
+                              cursor: 'pointer',
+                              padding: '2px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}
+                          >
+                            <Star
+                              size={14}
+                              fill={token.tokens?.is_favorite ? "#f59e0b" : "none"}
+                              color={token.tokens?.is_favorite ? "#f59e0b" : "#444"}
+                            />
+                          </button>
                           <span className={`badge ${token.is_gained ? 'badge-green' : 'badge-red'}`} style={{ fontSize: '0.55rem', padding: '1px 3px' }}>
                             {token.is_gained ? 'W' : 'L'}
                           </span>
