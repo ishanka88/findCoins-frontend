@@ -1719,6 +1719,9 @@ function App() {
                                   <a href={`https://rugcheck.xyz/tokens/${token.tokens.contract_address}`} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center' }}>
                                     <ShieldCheck size={12} color="#ef4444" />
                                   </a>
+                                  <a href={`https://axiom.trade/trade/${token.tokens.contract_address}?chain=sol`} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center' }}>
+                                    <img src="https://axiom.trade/axiom.svg" alt="Axiom" style={{ width: '12px', height: '12px' }} />
+                                  </a>
                                   {token.dex_age && (
                                     <span style={{
                                       fontSize: '0.9rem',
@@ -2152,6 +2155,9 @@ function App() {
                         </a>
                         <a href={`https://rugcheck.xyz/tokens/${token.tokens.contract_address}`} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center' }}>
                           <ShieldAlert size={16} color="#ef4444" />
+                        </a>
+                        <a href={`https://axiom.trade/trade/${token.tokens.contract_address}?chain=sol`} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center' }}>
+                          <img src="https://axiom.trade/axiom.svg" alt="Axiom" style={{ width: '16px', height: '16px' }} />
                         </a>
                         <ChevronDown
                           size={16}
