@@ -1682,7 +1682,7 @@ function App() {
                                 <span style={{ fontSize: '0.75rem', color: '#666', fontFamily: 'monospace' }}>
                                   {token.tokens.contract_address.slice(0, 4)}...{token.tokens.contract_address.slice(-4)}
                                 </span>
-                                <div onClick={(e) => handleCopy(e, `https://dexscreener.com/solana/${token.tokens.contract_address}`, token.token_id)} style={{ color: copiedId === token.token_id ? '#22c55e' : '#00C6FF', cursor: 'pointer', display: 'flex', position: 'relative' }}>
+                                <div onClick={(e) => handleCopy(e, token.tokens.contract_address, token.token_id)} style={{ color: copiedId === token.token_id ? '#22c55e' : '#00C6FF', cursor: 'pointer', display: 'flex', position: 'relative' }}>
                                   {copiedId === token.token_id && (
                                     <span style={{
                                       position: 'absolute',
@@ -1706,11 +1706,20 @@ function App() {
                                   {copiedId === token.token_id ? (
                                     <Check size={12} title="Copied!" />
                                   ) : (
-                                    <Copy size={12} title="Copy DexScreener Link" />
+                                    <Copy size={12} title="Copy Contract Address" />
                                   )}
                                 </div>
                                 <div style={{ display: 'flex', gap: '6px', marginLeft: '4px' }}>
-                                  <a href={`https://dexscreener.com/solana/${token.tokens.contract_address}`} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center' }}>
+                                  <a
+                                    href={`https://dexscreener.com/solana/${token.tokens.contract_address}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleCopy(e, `${formatMcap(token.mcap)} - ${token.holders || '0'}`, `${token.token_id}_metrics`);
+                                    }}
+                                    style={{ display: 'flex', alignItems: 'center' }}
+                                  >
                                     <img src="https://solscan.io/_next/static/media/dexscreener.e36090e0.png" alt="DexScreener" style={{ width: '12px', height: '12px', borderRadius: '2px' }} />
                                   </a>
                                   <a href={`https://solscan.io/token/${token.tokens.contract_address}#holders`} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} style={{ color: '#a855f7' }}><ExternalLink size={12} /></a>
@@ -2120,8 +2129,8 @@ function App() {
                         })()}
                         <button
                           className="btn-icon-small"
-                          onClick={(e) => handleCopy(e, `https://dexscreener.com/solana/${token.tokens.contract_address}`, token.token_id)}
-                          title="Copy DexScreener Link"
+                          onClick={(e) => handleCopy(e, token.tokens.contract_address, token.token_id)}
+                          title="Copy Contract Address"
                           style={{ width: '24px', height: '24px', padding: 0, position: 'relative' }}
                         >
                           {copiedId === token.token_id && (
@@ -2150,7 +2159,16 @@ function App() {
                             <Copy size={12} />
                           )}
                         </button>
-                        <a href={`https://dexscreener.com/solana/${token.tokens.contract_address}`} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center' }}>
+                        <a
+                          href={`https://dexscreener.com/solana/${token.tokens.contract_address}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCopy(e, `${formatMcap(token.mcap)} - ${token.holders || '0'}`, `${token.token_id}_metrics`);
+                          }}
+                          style={{ display: 'flex', alignItems: 'center' }}
+                        >
                           <img src="https://solscan.io/_next/static/media/dexscreener.e36090e0.png" alt="Dex" style={{ width: '16px', height: '16px', borderRadius: '2px' }} />
                         </a>
                         <a href={`https://rugcheck.xyz/tokens/${token.tokens.contract_address}`} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center' }}>
