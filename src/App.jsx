@@ -876,6 +876,14 @@ function App() {
     return `$${num.toFixed(0)}`;
   };
 
+  const formatMcapClipboard = (num) => {
+    if (!num) return '0';
+    if (num >= 1000000000) return `${(num / 1000000000).toFixed(1).replace(/\.0$/, '')}B`;
+    if (num >= 1000000) return `${(num / 1000000).toFixed(1).replace(/\.0$/, '')}M`;
+    if (num >= 1000) return `${(num / 1000).toFixed(0)}K`;
+    return num.toFixed(0);
+  };
+
   const formatNumber = (num) => {
     if (num === 0) return '0';
     if (!num) return '';
@@ -1716,7 +1724,7 @@ function App() {
                                     rel="noreferrer"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      handleCopy(e, `${formatMcap(token.mcap)} - ${token.holders || '0'}`, `${token.token_id}_metrics`);
+                                      handleCopy(e, `${formatMcapClipboard(token.mcap)} - ${token.holders || '0'}`, `${token.token_id}_metrics`);
                                     }}
                                     style={{ display: 'flex', alignItems: 'center' }}
                                   >
@@ -2165,7 +2173,7 @@ function App() {
                           rel="noreferrer"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleCopy(e, `${formatMcap(token.mcap)} - ${token.holders || '0'}`, `${token.token_id}_metrics`);
+                            handleCopy(e, `${formatMcapClipboard(token.mcap)} - ${token.holders || '0'}`, `${token.token_id}_metrics`);
                           }}
                           style={{ display: 'flex', alignItems: 'center' }}
                         >
