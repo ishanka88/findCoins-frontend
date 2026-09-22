@@ -67,7 +67,17 @@ function calculateHoldersChange(currentHolders, foundHolders) {
   const curr = parseInt(currentHolders, 10);
   const found = parseInt(foundHolders, 10);
   if (isNaN(curr) || isNaN(found) || found === 0) return null;
+  if (curr >= 10000 && found >= 10000) return null; // Both capped at >10K
   return ((curr - found) / found) * 100;
+}
+
+// Helper to format holder numbers (caps at >10K)
+function formatHolders(val) {
+  if (val == null || val === undefined || val === '') return '-';
+  const n = typeof val === 'number' ? val : parseInt(val, 10);
+  if (isNaN(n)) return val;
+  if (n >= 10000) return '>10K';
+  return n.toLocaleString();
 }
 
 // Helper to convert DexScreener age strings to minutes for filtering
@@ -1721,7 +1731,7 @@ function App() {
                                     rel="noreferrer"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      handleCopy(e, `${formatMcapClipboard(token.mcap)} - ${token.holders || '0'}`, `${token.token_id}_metrics`);
+                                      handleCopy(e, `${formatMcapClipboard(token.mcap)} - ${formatHolders(token.holders)}`, `${token.token_id}_metrics`);
                                     }}
                                     style={{ display: 'flex', alignItems: 'center' }}
                                   >
@@ -1790,11 +1800,11 @@ function App() {
                         </td>
                         <td
                           style={{ padding: '16px' }}
-                          title={`MC - ${token.tokens.found_at_mcap != null ? formatMcap(token.tokens.found_at_mcap) : 'N/A'}\nHol - ${token.tokens.found_at_holders != null ? token.tokens.found_at_holders : 'N/A'}\n${token.tokens.found_at ? formatDetailedTimeAgo(new Date(token.tokens.found_at).getTime()) : 'N/A'}`}
+                          title={`MC - ${token.tokens.found_at_mcap != null ? formatMcap(token.tokens.found_at_mcap) : 'N/A'}\nHol - ${token.tokens.found_at_holders != null ? formatHolders(token.tokens.found_at_holders) : 'N/A'}\n${token.tokens.found_at ? formatDetailedTimeAgo(new Date(token.tokens.found_at).getTime()) : 'N/A'}`}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', minWidth: '80px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span style={{ color: '#fff', fontSize: '0.9rem', lineHeight: 1 }}>{token.holders}</span>
+                              <span style={{ color: '#fff', fontSize: '0.9rem', lineHeight: 1 }}>{formatHolders(token.holders)}</span>
                               {(() => {
                                 const holdersChange = calculateHoldersChange(token.holders, token.tokens.found_at_holders);
                                 if (holdersChange !== null) {
@@ -1955,7 +1965,7 @@ function App() {
                                         </span>
                                         <span style={{ color: '#444', margin: '0 4px' }}>/</span>
                                         <span style={{ color: '#fff' }}>
-                                          {token.tokens.found_at_holders != null ? formatNumber(token.tokens.found_at_holders) : '0'}
+                                          {token.tokens.found_at_holders != null ? formatHolders(token.tokens.found_at_holders) : '0'}
                                         </span>
                                       </div>
                                     </div>
@@ -2170,7 +2180,7 @@ function App() {
                           rel="noreferrer"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleCopy(e, `${formatMcapClipboard(token.mcap)} - ${token.holders || '0'}`, `${token.token_id}_metrics`);
+                            handleCopy(e, `${formatMcapClipboard(token.mcap)} - ${formatHolders(token.holders)}`, `${token.token_id}_metrics`);
                           }}
                           style={{ display: 'flex', alignItems: 'center' }}
                         >
@@ -2216,7 +2226,7 @@ function App() {
                           </span>
                           <span style={{ fontSize: '0.85rem', color: '#666' }}>|</span>
                           <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#10b981' }}>
-                            {token.holders ? token.holders : '-'}
+                            {formatHolders(token.holders)}
                           </span>
                           {(() => {
                             const holdersChange = calculateHoldersChange(token.holders, token.tokens.found_at_holders);
