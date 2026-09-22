@@ -574,6 +574,119 @@ export function BotSettingsModal({ onClose }) {
                             </div>
                         </div>
 
+                        {/* HELIUS KEYS SECTION */}
+                        <div style={{ borderTop: '1px solid #333', paddingTop: '20px', marginBottom: '20px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                <h4 style={{ margin: 0, color: '#a78bfa', fontSize: '0.95rem' }}>Helius API Keys ({heliusActiveCount}/{heliusTotalCount})</h4>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
+                                    <span style={{ fontSize: '0.8rem', color: '#888' }}>Total Requests: {heliusTotalUsage}</span>
+                                    <span style={{ fontSize: '0.75rem', color: '#666', fontStyle: 'italic' }}>Daily Reset in: {timeLeftToReset}</span>
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+                                <input
+                                    type="text"
+                                    placeholder="Paste new Helius API Key (UUID format)..."
+                                    value={newHeliusKey}
+                                    onChange={(e) => setNewHeliusKey(e.target.value)}
+                                    style={{ flex: 1, padding: '8px', background: '#1e1e20', border: '1px solid #333', borderRadius: '6px', color: 'white', fontSize: '0.85rem' }}
+                                />
+                                <button
+                                    onClick={handleAddHeliusKey}
+                                    disabled={addingHeliusKey || !newHeliusKey.trim()}
+                                    className="btn-secondary"
+                                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px' }}
+                                >
+                                    <Plus size={14} /> Add
+                                </button>
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '150px', overflowY: 'auto' }}>
+                                {(!heliusKeys || heliusKeys.length === 0) ? (
+                                    <div style={{ color: '#666', fontSize: '0.85rem', fontStyle: 'italic', textAlign: 'center', padding: '10px' }}>
+                                        No Helius keys added. Bot will fail to fetch holders.
+                                    </div>
+                                ) : (
+                                    heliusKeys.map(k => (
+                                        <div key={k?.id || Math.random()} style={{
+                                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                            background: 'rgba(255,255,255,0.03)', padding: '8px 12px', borderRadius: '6px',
+                                            border: k?.is_current ? '1px solid #a78bfa' : (k?.status === 'active' ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)')
+                                        }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                <div style={{
+                                                    width: '8px', height: '8px', borderRadius: '50%',
+                                                    background: k?.status === 'active' ? '#10b981' : '#ef4444',
+                                                    boxShadow: k?.status === 'active' ? '0 0 5px #10b981' : '0 0 5px #ef4444'
+                                                }} />
+                                                <div>
+                                                    <div style={{ color: '#fff', fontSize: '0.85rem', fontFamily: 'monospace' }}>
+                                                        {k?.key ? `${k.key.slice(0, 8)}...${k.key.slice(-4)}` : 'Unknown Key'}
+                                                    </div>
+                                                    <div style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                        <span style={{
+                                                            color: k?.status === 'active' ? '#10b981' : (k?.status === 'rate_limited' ? '#f59e0b' : '#ef4444'),
+                                                            textTransform: 'uppercase', fontWeight: '700'
+                                                        }}>
+                                                            {k?.status === 'quota_exceeded' ? 'QUOTA EXCEEDED' : (k?.status === 'rate_limited' ? 'RATE LIMITED' : (k?.status || 'UNKNOWN'))}
+                                                        </span>
+                                                        <span style={{ color: '#666' }}>•</span>
+                                                        <span style={{ color: '#ccc' }}>{k?.usage_count || 0} reqs</span>
+                                                        <span style={{ color: '#666' }}>•</span>
+                                                        <span style={{ color: '#888', fontStyle: 'italic' }}>{formatTimeAgo(k?.last_used_at)}</span>
+                                                        {k?.is_current && <span style={{ color: '#a78bfa', fontWeight: '600' }}>• CURRENT</span>}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <button
+                                                    onClick={() => checkHeliusKeyStatus(k)}
+                                                    disabled={checkingHeliusKeys[k.id]}
+                                                    style={{
+                                                        background: 'rgba(167, 139, 250, 0.1)',
+                                                        border: '1px solid rgba(167, 139, 250, 0.3)',
+                                                        borderRadius: '4px', padding: '4px 8px',
+                                                        color: '#a78bfa', fontSize: '0.7rem',
+                                                        cursor: checkingHeliusKeys[k.id] ? 'not-allowed' : 'pointer',
+                                                        display: 'flex', alignItems: 'center', gap: '4px'
+                                                    }}
+                                                    title="Check Helius Key Status"
+                                                >
+                                                    <Zap size={10} fill={checkingHeliusKeys[k.id] ? 'none' : '#a78bfa'} />
+                                                    {checkingHeliusKeys[k.id] ? '...' : 'Check'}
+                                                </button>
+                                                <button
+                                                    onClick={() => handleActivateHeliusKey(k.id)}
+                                                    disabled={saving || !verifiedHeliusKeys[k.id] || k.status === 'active'}
+                                                    style={{
+                                                        background: (verifiedHeliusKeys[k.id] && k.status !== 'active')
+                                                            ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255,255,255,0.05)',
+                                                        border: '1px solid ' + ((verifiedHeliusKeys[k.id] && k.status !== 'active') ? '#10b981' : '#444'),
+                                                        borderRadius: '4px', padding: '4px 8px',
+                                                        color: (verifiedHeliusKeys[k.id] && k.status !== 'active') ? '#10b981' : '#666',
+                                                        fontSize: '0.7rem',
+                                                        cursor: (saving || !verifiedHeliusKeys[k.id] || k.status === 'active') ? 'not-allowed' : 'pointer',
+                                                        display: 'flex', alignItems: 'center', gap: '4px'
+                                                    }}
+                                                    title={k.status === 'active' ? 'Key is already active' : (verifiedHeliusKeys[k.id] ? 'Activate Key' : 'Check key first to activate')}
+                                                >
+                                                    Activate
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteHeliusKey(k?.id)}
+                                                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
+                                                    title="Delete Key"
+                                                >
+                                                    <Trash2 size={14} color="#666" className="hover-red" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+
                         {/* MORALIS KEYS SECTION */}
                         <div style={{ borderTop: '1px solid #333', paddingTop: '20px', marginBottom: '20px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
@@ -684,119 +797,6 @@ export function BotSettingsModal({ onClose }) {
                                                 </button>
                                                 <button
                                                     onClick={() => handleDeleteKey(k?.id)}
-                                                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
-                                                    title="Delete Key"
-                                                >
-                                                    <Trash2 size={14} color="#666" className="hover-red" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-                        </div>
-
-                        {/* HELIUS KEYS SECTION */}
-                        <div style={{ borderTop: '1px solid #333', paddingTop: '20px', marginBottom: '20px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                                <h4 style={{ margin: 0, color: '#a78bfa', fontSize: '0.95rem' }}>Helius API Keys ({heliusActiveCount}/{heliusTotalCount})</h4>
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
-                                    <span style={{ fontSize: '0.8rem', color: '#888' }}>Total Requests: {heliusTotalUsage}</span>
-                                    <span style={{ fontSize: '0.75rem', color: '#666', fontStyle: 'italic' }}>Daily Reset in: {timeLeftToReset}</span>
-                                </div>
-                            </div>
-
-                            <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
-                                <input
-                                    type="text"
-                                    placeholder="Paste new Helius API Key (UUID format)..."
-                                    value={newHeliusKey}
-                                    onChange={(e) => setNewHeliusKey(e.target.value)}
-                                    style={{ flex: 1, padding: '8px', background: '#1e1e20', border: '1px solid #333', borderRadius: '6px', color: 'white', fontSize: '0.85rem' }}
-                                />
-                                <button
-                                    onClick={handleAddHeliusKey}
-                                    disabled={addingHeliusKey || !newHeliusKey.trim()}
-                                    className="btn-secondary"
-                                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px' }}
-                                >
-                                    <Plus size={14} /> Add
-                                </button>
-                            </div>
-
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '150px', overflowY: 'auto' }}>
-                                {(!heliusKeys || heliusKeys.length === 0) ? (
-                                    <div style={{ color: '#666', fontSize: '0.85rem', fontStyle: 'italic', textAlign: 'center', padding: '10px' }}>
-                                        No Helius keys added. Bot will fail to fetch holders.
-                                    </div>
-                                ) : (
-                                    heliusKeys.map(k => (
-                                        <div key={k?.id || Math.random()} style={{
-                                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                            background: 'rgba(255,255,255,0.03)', padding: '8px 12px', borderRadius: '6px',
-                                            border: k?.is_current ? '1px solid #a78bfa' : (k?.status === 'active' ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)')
-                                        }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                <div style={{
-                                                    width: '8px', height: '8px', borderRadius: '50%',
-                                                    background: k?.status === 'active' ? '#10b981' : '#ef4444',
-                                                    boxShadow: k?.status === 'active' ? '0 0 5px #10b981' : '0 0 5px #ef4444'
-                                                }} />
-                                                <div>
-                                                    <div style={{ color: '#fff', fontSize: '0.85rem', fontFamily: 'monospace' }}>
-                                                        {k?.key ? `${k.key.slice(0, 8)}...${k.key.slice(-4)}` : 'Unknown Key'}
-                                                    </div>
-                                                    <div style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                        <span style={{
-                                                            color: k?.status === 'active' ? '#10b981' : (k?.status === 'rate_limited' ? '#f59e0b' : '#ef4444'),
-                                                            textTransform: 'uppercase', fontWeight: '700'
-                                                        }}>
-                                                            {k?.status === 'quota_exceeded' ? 'QUOTA EXCEEDED' : (k?.status === 'rate_limited' ? 'RATE LIMITED' : (k?.status || 'UNKNOWN'))}
-                                                        </span>
-                                                        <span style={{ color: '#666' }}>•</span>
-                                                        <span style={{ color: '#ccc' }}>{k?.usage_count || 0} reqs</span>
-                                                        <span style={{ color: '#666' }}>•</span>
-                                                        <span style={{ color: '#888', fontStyle: 'italic' }}>{formatTimeAgo(k?.last_used_at)}</span>
-                                                        {k?.is_current && <span style={{ color: '#a78bfa', fontWeight: '600' }}>• CURRENT</span>}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                <button
-                                                    onClick={() => checkHeliusKeyStatus(k)}
-                                                    disabled={checkingHeliusKeys[k.id]}
-                                                    style={{
-                                                        background: 'rgba(167, 139, 250, 0.1)',
-                                                        border: '1px solid rgba(167, 139, 250, 0.3)',
-                                                        borderRadius: '4px', padding: '4px 8px',
-                                                        color: '#a78bfa', fontSize: '0.7rem',
-                                                        cursor: checkingHeliusKeys[k.id] ? 'not-allowed' : 'pointer',
-                                                        display: 'flex', alignItems: 'center', gap: '4px'
-                                                    }}
-                                                    title="Check Helius Key Status"
-                                                >
-                                                    <Zap size={10} fill={checkingHeliusKeys[k.id] ? 'none' : '#a78bfa'} />
-                                                    {checkingHeliusKeys[k.id] ? '...' : 'Check'}
-                                                </button>
-                                                <button
-                                                    onClick={() => handleActivateHeliusKey(k.id)}
-                                                    disabled={saving || !verifiedHeliusKeys[k.id] || k.status === 'active'}
-                                                    style={{
-                                                        background: (verifiedHeliusKeys[k.id] && k.status !== 'active')
-                                                            ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255,255,255,0.05)',
-                                                        border: '1px solid ' + ((verifiedHeliusKeys[k.id] && k.status !== 'active') ? '#10b981' : '#444'),
-                                                        borderRadius: '4px', padding: '4px 8px',
-                                                        color: (verifiedHeliusKeys[k.id] && k.status !== 'active') ? '#10b981' : '#666',
-                                                        fontSize: '0.7rem',
-                                                        cursor: (saving || !verifiedHeliusKeys[k.id] || k.status === 'active') ? 'not-allowed' : 'pointer',
-                                                        display: 'flex', alignItems: 'center', gap: '4px'
-                                                    }}
-                                                    title={k.status === 'active' ? 'Key is already active' : (verifiedHeliusKeys[k.id] ? 'Activate Key' : 'Check key first to activate')}
-                                                >
-                                                    Activate
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDeleteHeliusKey(k?.id)}
                                                     style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
                                                     title="Delete Key"
                                                 >

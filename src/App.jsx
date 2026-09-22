@@ -125,7 +125,7 @@ function App() {
   const [mobileTab, setMobileTab] = useState('strategies'); // 'strategies' or 'activity'
 
   const [copiedId, setCopiedId] = useState(null);
-  const [moralisKeyInfo, setMoralisKeyInfo] = useState({ count: 0, keySnippet: '' });
+  const [heliusKeyInfo, setHeliusKeyInfo] = useState({ count: 0, keySnippet: '' });
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('dex_rank');
   const [sortOrder, setSortOrder] = useState('asc');
@@ -192,7 +192,7 @@ function App() {
   // Fetch Initial Data
   useEffect(() => {
     fetchData();
-    fetchActiveMoralisUsage();
+    fetchActiveHeliusUsage();
 
     // Realtime Subscriptions
     const channel = supabase
@@ -200,14 +200,14 @@ function App() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'active_tokens' }, () => fetchData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'filter_configs' }, () => fetchData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'bot_settings' }, () => fetchData())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'moralis_keys' }, () => {
-        fetchActiveMoralisUsage();
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'helius_keys' }, () => {
+        fetchActiveHeliusUsage();
       })
       .subscribe();
 
     const interval = setInterval(() => {
       fetchData();
-      fetchActiveMoralisUsage();
+      fetchActiveHeliusUsage();
     }, 20000); // More frequent polling for mobile
 
     return () => {
@@ -234,24 +234,23 @@ function App() {
     }
   };
 
-  const fetchActiveMoralisUsage = async () => {
+  const fetchActiveHeliusUsage = async () => {
     try {
-      const { data, error } = await supabase
-        .from('moralis_keys')
+      const { data } = await supabase
+        .from('helius_keys')
         .select('key, usage_count, last_used_at')
-        .eq('status', 'active')
         .eq('is_current', true)
         .limit(1);
 
       if (data && data.length > 0) {
         const keyData = data[0];
-        setMoralisKeyInfo({
+        setHeliusKeyInfo({
           count: keyData.usage_count || 0,
-          keySnippet: keyData.key ? `${keyData.key.slice(0, 4)}...${keyData.key.slice(-4)}` : 'Unknown'
+          keySnippet: keyData.key ? `${keyData.key.slice(0, 8)}...${keyData.key.slice(-4)}` : 'Unknown'
         });
       }
     } catch (err) {
-      console.error("Error fetching moralis usage:", err);
+      console.error("Error fetching Helius usage:", err);
     }
   };
 
@@ -413,9 +412,9 @@ function App() {
   const handleManualRefresh = async (e, tokenId) => {
     e.stopPropagation();
 
-    // Check if Moralis API is globally disabled/erroring
-    if (botSettings?.moralis_api_status === 'error') {
-      alert("Cannot refresh holders: The Moralis API is currently down or has exceeded its rate limit. Please wait for the cooldown to expire.");
+    // Check if Helius API is globally disabled/erroring
+    if (botSettings?.helius_api_status === 'error') {
+      alert("Cannot refresh holders: The Helius API is currently down or rate limited. Please wait for the cooldown to expire.");
       return;
     }
 
@@ -791,37 +790,38 @@ function App() {
   };
 
   const checkCurrentKeyStatus = async () => {
-    // 1. Get current key
     const { data: keys } = await supabase
-      .from('moralis_keys')
+      .from('helius_keys')
       .select('*')
       .eq('is_current', true)
       .limit(1);
 
     if (!keys || keys.length === 0) {
-      alert("No current API key found.");
+      alert("No current Helius API key found.");
       return;
     }
 
     const keyRecord = keys[0];
     setCheckingKey(true);
     try {
-      const url = `https://solana-gateway.moralis.io/token/mainnet/holders/So11111111111111111111111111111111111111112`;
-      const resp = await fetch(url, {
-        headers: {
-          'Accept': 'application/json',
-          'X-API-Key': keyRecord.key
-        }
+      const rpcUrl = `https://mainnet.helius-rpc.com/?api-key=${keyRecord.key}`;
+      const resp = await fetch(rpcUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0', id: 'probe', method: 'getAsset',
+          params: { id: 'So11111111111111111111111111111111111111112' }
+        })
       });
-
-      if (resp.status === 200) {
+      const data = await resp.json();
+      if (resp.status === 200 && !data.error) {
         setVerifiedKey(true);
-        alert("Status 200: Key is working correctly!");
+        alert("Status 200: Helius key is working correctly! ✅");
       } else {
-        alert(`Status ${resp.status}: Check failed.`);
+        alert(`Check failed: ${data?.error?.message || `HTTP ${resp.status}`}`);
       }
     } catch (error) {
-      console.error('Error checking key status:', error);
+      console.error('Error checking Helius key status:', error);
       alert('Failed to check key status: ' + error.message);
     } finally {
       setCheckingKey(false);
@@ -829,9 +829,8 @@ function App() {
   };
 
   const handleActivateKeyFromBanner = async () => {
-    // 1. Get current key
     const { data: keys } = await supabase
-      .from('moralis_keys')
+      .from('helius_keys')
       .select('id')
       .eq('is_current', true)
       .limit(1);
@@ -840,22 +839,20 @@ function App() {
     const keyId = keys[0].id;
 
     try {
-      // Set key to active
       await supabase
-        .from('moralis_keys')
+        .from('helius_keys')
         .update({ status: 'active' })
         .eq('id', keyId);
 
-      // Reset global bot settings
       await supabase
         .from('bot_settings')
-        .update({ moralis_api_status: 'ok' })
+        .update({ helius_api_status: 'ok' })
         .eq('id', 1);
 
       setVerifiedKey(false);
       fetchData();
     } catch (error) {
-      console.error('Error activating key:', error);
+      console.error('Error activating Helius key:', error);
       alert('Failed to activate key: ' + error.message);
     }
   };
@@ -1029,21 +1026,21 @@ function App() {
           </div>
 
           <div
-            title={`Active Moralis Key: ${moralisKeyInfo.keySnippet}`}
+            title={`Active Helius Key: ${heliusKeyInfo.keySnippet}`}
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
-              background: 'rgba(168, 85, 247, 0.1)',
+              background: 'rgba(167, 139, 250, 0.1)',
               padding: '6px 12px',
               borderRadius: '20px',
-              border: '1px solid rgba(168, 85, 247, 0.2)',
+              border: '1px solid rgba(167, 139, 250, 0.2)',
               cursor: 'help'
             }}
           >
-            <Zap size={12} color="#a855f7" />
-            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#a855f7' }}>
-              REQ: {moralisKeyInfo.count}
+            <Zap size={12} color="#a78bfa" />
+            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#a78bfa' }}>
+              REQ: {heliusKeyInfo.count}
             </span>
           </div>
 
@@ -1084,7 +1081,7 @@ function App() {
             }
           `}
         </style>
-        {botSettings?.moralis_api_status === 'error' && (
+        {botSettings?.helius_api_status === 'error' && (
           <div style={{
             background: 'rgba(239, 68, 68, 0.1)',
             border: '1px solid #ef4444',
@@ -1108,13 +1105,13 @@ function App() {
               <ShieldAlert color="white" size={24} />
             </div>
             <div style={{ flex: 1 }}>
-              <h3 style={{ margin: 0, color: '#ff7676', fontSize: '1rem', fontWeight: 700 }}>Moralis API Limit Reached</h3>
+              <h3 style={{ margin: 0, color: '#ff7676', fontSize: '1rem', fontWeight: 700 }}>Helius API Limit Reached</h3>
               <p style={{ margin: '4px 0 0 0', color: '#ff9a9a', fontSize: '0.85rem', opacity: 0.9 }}>
-                The bot has encountered a persistent 404/Plan Limit error from Moralis.
+                The bot has encountered a persistent error from Helius RPC.
                 Holder updates are currently paused.
-                {botSettings?.moralis_error_at && (
+                {botSettings?.helius_error_at && (
                   <span style={{ marginLeft: '8px', fontWeight: 600 }}>
-                    Error occurred at: {new Date(botSettings.moralis_error_at).toLocaleString('en-US', { timeZone: 'Asia/Colombo' })}
+                    Error occurred at: {new Date(botSettings.helius_error_at).toLocaleString('en-US', { timeZone: 'Asia/Colombo' })}
                   </span>
                 )}
               </p>
@@ -1124,9 +1121,9 @@ function App() {
                 onClick={checkCurrentKeyStatus}
                 disabled={checkingKey}
                 style={{
-                  background: 'rgba(0, 198, 255, 0.1)',
-                  border: '1px solid rgba(0, 198, 255, 0.3)',
-                  color: '#00C6FF',
+                  background: 'rgba(167, 139, 250, 0.1)',
+                  border: '1px solid rgba(167, 139, 250, 0.3)',
+                  color: '#a78bfa',
                   padding: '6px 12px',
                   borderRadius: '6px',
                   fontSize: '0.8rem',
@@ -1136,7 +1133,7 @@ function App() {
                   gap: '4px'
                 }}
               >
-                <Zap size={14} fill={checkingKey ? 'none' : '#00C6FF'} />
+                <Zap size={14} fill={checkingKey ? 'none' : '#a78bfa'} />
                 {checkingKey ? 'Checking...' : 'Check'}
               </button>
 
