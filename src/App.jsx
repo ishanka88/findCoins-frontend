@@ -1693,6 +1693,40 @@ function App() {
                                   Scraped {formatTimeAgo(token.last_scraped_at)}
                                 </span>
                               </div>
+                              {/* GeckoTerminal Security & Distribution Badges */}
+                              {(token.gt_score != null || token.dev_holding_pct != null || token.is_lp_locked) && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '3px' }}>
+                                  {token.gt_score != null && (
+                                    <span style={{
+                                      fontSize: '0.65rem',
+                                      fontWeight: 700,
+                                      padding: '1px 5px',
+                                      borderRadius: '4px',
+                                      background: token.gt_score >= 70 ? 'rgba(34,197,94,0.15)' : token.gt_score >= 40 ? 'rgba(234,179,8,0.15)' : 'rgba(239,68,68,0.15)',
+                                      color: token.gt_score >= 70 ? '#22c55e' : token.gt_score >= 40 ? '#eab308' : '#ef4444'
+                                    }} title={`Gecko Trust Score: ${Math.round(token.gt_score)}/100`}>
+                                      GT {Math.round(token.gt_score)}
+                                    </span>
+                                  )}
+                                  {token.dev_holding_pct != null && (
+                                    <span style={{
+                                      fontSize: '0.65rem',
+                                      fontWeight: 700,
+                                      padding: '1px 5px',
+                                      borderRadius: '4px',
+                                      background: token.dev_holding_pct > 20 ? 'rgba(239,68,68,0.15)' : 'rgba(59,130,246,0.15)',
+                                      color: token.dev_holding_pct > 20 ? '#ef4444' : '#60a5fa'
+                                    }} title={`Developer Holdings: ${Number(token.dev_holding_pct).toFixed(1)}%`}>
+                                      Dev {Number(token.dev_holding_pct).toFixed(1)}%
+                                    </span>
+                                  )}
+                                  {token.is_lp_locked && (
+                                    <span title="Liquidity Locked / Burned" style={{ fontSize: '0.65rem', padding: '1px 4px', borderRadius: '4px', background: 'rgba(34,197,94,0.15)', color: '#22c55e', fontWeight: 600 }}>
+                                      🔒 LP
+                                    </span>
+                                  )}
+                                </div>
+                              )}
                               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
                                 <span style={{ fontSize: '0.75rem', color: '#666', fontFamily: 'monospace' }}>
                                   {token.tokens.contract_address.slice(0, 4)}...{token.tokens.contract_address.slice(-4)}
@@ -1725,6 +1759,16 @@ function App() {
                                   )}
                                 </div>
                                 <div style={{ display: 'flex', gap: '6px', marginLeft: '4px' }}>
+                                  <a
+                                    href={`https://www.geckoterminal.com/solana/pools/${token.tokens.contract_address}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    onClick={(e) => e.stopPropagation()}
+                                    title="View on GeckoTerminal"
+                                    style={{ display: 'flex', alignItems: 'center' }}
+                                  >
+                                    <img src="https://assets.geckoterminal.com/vbj38y62bcljfdditis5y8t73b3d" alt="Gecko" style={{ width: '12px', height: '12px', borderRadius: '2px' }} />
+                                  </a>
                                   <a
                                     href={`https://dexscreener.com/solana/${token.tokens.contract_address}`}
                                     target="_blank"
@@ -2595,7 +2639,7 @@ function App() {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                 <div className="glass-card" style={{ padding: '12px' }}>
                   <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '4px' }}>Found At</div>
                   <div style={{ fontSize: '1rem', fontWeight: 600 }}>{new Date(detailsToken.found_at).toLocaleString()}</div>
@@ -2614,7 +2658,61 @@ function App() {
                 </div>
               </div>
 
+              {/* Security & Risk Analysis (GeckoTerminal) */}
+              <div className="glass-card" style={{ padding: '16px', marginBottom: '24px', background: 'rgba(0,198,255,0.02)', border: '1px solid rgba(0,198,255,0.1)' }}>
+                <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', color: '#00C6FF', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  🛡️ Security & Distribution Analysis
+                </h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', fontSize: '0.8rem' }}>
+                  <div>
+                    <div style={{ color: '#888', fontSize: '0.7rem', marginBottom: '2px' }}>Gecko Trust Score</div>
+                    <div style={{ fontWeight: 700, color: detailsToken.gt_score >= 70 ? '#10b981' : detailsToken.gt_score >= 40 ? '#f59e0b' : '#ef4444' }}>
+                      {detailsToken.gt_score != null ? `${Math.round(detailsToken.gt_score)} / 100` : 'Available on Scrape'}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ color: '#888', fontSize: '0.7rem', marginBottom: '2px' }}>Dev Holdings</div>
+                    <div style={{ fontWeight: 700, color: detailsToken.dev_holding_pct > 20 ? '#ef4444' : '#60a5fa' }}>
+                      {detailsToken.dev_holding_pct != null ? `${Number(detailsToken.dev_holding_pct).toFixed(1)}%` : 'Available on Scrape'}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ color: '#888', fontSize: '0.7rem', marginBottom: '2px' }}>Top 10 Wallets</div>
+                    <div style={{ fontWeight: 700, color: '#fff' }}>
+                      {detailsToken.top_10_holding_pct != null ? `${Number(detailsToken.top_10_holding_pct).toFixed(1)}%` : 'Available on Scrape'}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ color: '#888', fontSize: '0.7rem', marginBottom: '2px' }}>LP Status</div>
+                    <div style={{ fontWeight: 700, color: detailsToken.is_lp_locked ? '#10b981' : '#f59e0b' }}>
+                      {detailsToken.is_lp_locked ? 'Locked 🔒' : 'Unlocked'}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ color: '#888', fontSize: '0.7rem', marginBottom: '2px' }}>Mint Authority</div>
+                    <div style={{ fontWeight: 700, color: detailsToken.is_mintable ? '#ef4444' : '#10b981' }}>
+                      {detailsToken.is_mintable ? 'Enabled ⚠️' : 'Disabled (Safe)'}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ color: '#888', fontSize: '0.7rem', marginBottom: '2px' }}>Freeze Authority</div>
+                    <div style={{ fontWeight: 700, color: detailsToken.is_freezable ? '#ef4444' : '#10b981' }}>
+                      {detailsToken.is_freezable ? 'Enabled ⚠️' : 'Disabled (Safe)'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div style={{ display: 'flex', gap: '12px' }}>
+                <a
+                  href={`https://www.geckoterminal.com/solana/pools/${detailsToken.contract_address}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn-primary"
+                  style={{ flex: 1, textAlign: 'center', textDecoration: 'none', padding: '12px', borderRadius: '8px', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' }}
+                >
+                  GeckoTerminal
+                </a>
                 <a
                   href={`https://dexscreener.com/solana/${detailsToken.contract_address}`}
                   target="_blank"
@@ -2622,7 +2720,7 @@ function App() {
                   className="btn-primary"
                   style={{ flex: 1, textAlign: 'center', textDecoration: 'none', padding: '12px', borderRadius: '8px' }}
                 >
-                  View on DexScreener
+                  DexScreener
                 </a>
                 <button
                   onClick={() => setDetailsToken(null)}
