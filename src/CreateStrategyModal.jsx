@@ -473,6 +473,7 @@ export function CreateStrategyModal({ onClose, onCreated, initialData = null }) 
                                         <option value="marketCap">Market cap</option>
                                         <option value="fdv">FDV</option>
                                         <option value="pairAge">Pair age</option>
+                                        <option value="activeBoosts">Boosts</option>
                                     </optgroup>
                                 </select>
                             </div>
