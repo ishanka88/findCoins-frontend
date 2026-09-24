@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from './supabaseClient';
 import { generateDexScreenerUrl } from './utils/dexscreener';
-import { X, Check, Save, ExternalLink } from 'lucide-react';
+import { generateGeckoTerminalUrl } from './utils/geckoterminal';
+import { X, Check, Save, ExternalLink, ChevronUp } from 'lucide-react';
 
 // ... (in component)
 
@@ -161,6 +162,19 @@ export function CreateStrategyModal({ onClose, onCreated, initialData = null }) 
     // Selection State
     const [selectedPlatforms, setSelectedPlatforms] = useState(['solana']);
     const [selectedDexes, setSelectedDexes] = useState([]); // Empty = All
+    const [showPreviewMenu, setShowPreviewMenu] = useState(false);
+    const previewRef = useRef(null);
+
+    // Close preview dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (previewRef.current && !previewRef.current.contains(event.target)) {
+                setShowPreviewMenu(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     // Form State
     const [formData, setFormData] = useState({
@@ -295,10 +309,18 @@ export function CreateStrategyModal({ onClose, onCreated, initialData = null }) 
         return dsParams;
     };
 
-    const handlePreview = () => {
+    const handleDexPreview = (e) => {
+        if (e) e.stopPropagation();
         const params = getParams();
         const url = generateDexScreenerUrl(params);
-        window.open(url, '_blank');
+        window.open(url, '_blank', 'noopener,noreferrer');
+    };
+
+    const handleGeckoPreview = (e) => {
+        if (e) e.stopPropagation();
+        const params = getParams();
+        const url = generateGeckoTerminalUrl(params);
+        window.open(url, '_blank', 'noopener,noreferrer');
     };
 
     const handleSubmit = async (e) => {
@@ -531,13 +553,169 @@ export function CreateStrategyModal({ onClose, onCreated, initialData = null }) 
                 </div>
 
                 {/* Footer */}
-                <div style={{ padding: '16px 24px', borderTop: '1px solid #2a2a2d', display: 'flex', justifyContent: 'flex-end', gap: '12px', background: '#18181b' }}>
-                    <button
-                        type="button" onClick={handlePreview}
-                        style={{ padding: '12px 24px', background: 'transparent', border: '1px solid #333', color: '#ccc', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
-                    >
-                        <ExternalLink size={18} /> Preview
-                    </button>
+                <div style={{ padding: '16px 24px', borderTop: '1px solid #2a2a2d', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '12px', background: '#18181b' }}>
+                    {/* Preview Button Group with Dropdown */}
+                    <div style={{ position: 'relative' }} ref={previewRef}>
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            background: '#1f1f23',
+                            border: '1px solid #333',
+                            borderRadius: '8px',
+                            overflow: 'hidden'
+                        }}>
+                            <button
+                                type="button"
+                                onClick={() => setShowPreviewMenu(!showPreviewMenu)}
+                                style={{
+                                    padding: '11px 14px',
+                                    background: showPreviewMenu ? '#2a2a32' : 'transparent',
+                                    border: 'none',
+                                    color: '#ccc',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    fontSize: '0.88rem',
+                                    fontWeight: 500,
+                                    borderRight: '1px solid #2e2e33',
+                                    transition: 'all 0.15s ease'
+                                }}
+                                title="Open preview destinations menu"
+                            >
+                                <ExternalLink size={16} />
+                                <span>Preview</span>
+                                <ChevronUp size={14} style={{ transform: showPreviewMenu ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
+                            </button>
+
+                            {/* GeckoTerminal Direct Icon Button */}
+                            <button
+                                type="button"
+                                onClick={handleGeckoPreview}
+                                title="Open preview on GeckoTerminal in new tab"
+                                style={{
+                                    padding: '10px 14px',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    borderRight: '1px solid #2e2e33',
+                                    color: '#e4e4e7',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '7px',
+                                    fontSize: '0.82rem',
+                                    fontWeight: 500,
+                                    transition: 'all 0.15s ease'
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.background = '#27272a'; e.currentTarget.style.color = '#84cc16'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#e4e4e7'; }}
+                            >
+                                <img src="https://assets.geckoterminal.com/vbj38y62bcljfdditis5y8t73b3d" alt="GeckoTerminal" style={{ width: '16px', height: '16px', borderRadius: '3px' }} />
+                                <span>Gecko</span>
+                            </button>
+
+                            {/* DexScreener Direct Icon Button */}
+                            <button
+                                type="button"
+                                onClick={handleDexPreview}
+                                title="Open preview on DexScreener in new tab"
+                                style={{
+                                    padding: '10px 14px',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: '#e4e4e7',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '7px',
+                                    fontSize: '0.82rem',
+                                    fontWeight: 500,
+                                    transition: 'all 0.15s ease'
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.background = '#27272a'; e.currentTarget.style.color = '#22c55e'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#e4e4e7'; }}
+                            >
+                                <img src="https://solscan.io/_next/static/media/dexscreener.e36090e0.png" alt="DexScreener" style={{ width: '16px', height: '16px', borderRadius: '3px' }} />
+                                <span>Dex</span>
+                            </button>
+                        </div>
+
+                        {/* Dropdown Menu directly under/above the Preview button */}
+                        {showPreviewMenu && (
+                            <div style={{
+                                position: 'absolute',
+                                bottom: 'calc(100% + 8px)',
+                                left: 0,
+                                minWidth: '260px',
+                                background: '#18181b',
+                                border: '1px solid #333',
+                                borderRadius: '10px',
+                                boxShadow: '0 12px 32px rgba(0,0,0,0.7)',
+                                padding: '6px',
+                                zIndex: 100,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '4px'
+                            }}>
+                                <div style={{ padding: '6px 10px', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#71717a', fontWeight: 600 }}>
+                                    Preview Filter On
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => { handleGeckoPreview(); setShowPreviewMenu(false); }}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '10px',
+                                        padding: '10px 12px',
+                                        background: 'transparent',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        color: '#f4f4f5',
+                                        cursor: 'pointer',
+                                        textAlign: 'left',
+                                        transition: 'background 0.15s'
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.background = '#27272a'}
+                                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                >
+                                    <img src="https://assets.geckoterminal.com/vbj38y62bcljfdditis5y8t73b3d" alt="GeckoTerminal" style={{ width: '22px', height: '22px', borderRadius: '4px' }} />
+                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#84cc16' }}>GeckoTerminal</span>
+                                        <span style={{ fontSize: '0.72rem', color: '#a1a1aa' }}>Open filtered pools on GeckoTerminal</span>
+                                    </div>
+                                    <ExternalLink size={14} style={{ marginLeft: 'auto', color: '#71717a' }} />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => { handleDexPreview(); setShowPreviewMenu(false); }}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '10px',
+                                        padding: '10px 12px',
+                                        background: 'transparent',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        color: '#f4f4f5',
+                                        cursor: 'pointer',
+                                        textAlign: 'left',
+                                        transition: 'background 0.15s'
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.background = '#27272a'}
+                                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                >
+                                    <img src="https://solscan.io/_next/static/media/dexscreener.e36090e0.png" alt="DexScreener" style={{ width: '22px', height: '22px', borderRadius: '4px' }} />
+                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#22c55e' }}>DexScreener</span>
+                                        <span style={{ fontSize: '0.72rem', color: '#a1a1aa' }}>Open filtered pairs on DexScreener</span>
+                                    </div>
+                                    <ExternalLink size={14} style={{ marginLeft: 'auto', color: '#71717a' }} />
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
                     <button
                         form="stratForm" type="submit" className="btn-primary" disabled={loading}
                         style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', padding: '12px 32px' }}
