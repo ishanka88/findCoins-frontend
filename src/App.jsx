@@ -272,25 +272,7 @@ function App() {
         *,
         dex_age,
         tokens (
-          contract_address,
-          symbol,
-          token_name,
-          logo_url,
-          is_blacklisted,
-          found_at,
-          found_at_mcap,
-          found_at_holders,
-          found_at_price,
-          found_at_liquidity,
-          found_at_volume,
-          found_at_txns,
-          found_at_makers,
-          found_at_change_m5,
-          found_at_change_h1,
-          found_at_change_h6,
-          found_at_change_h24,
-          is_favorite,
-          favorited_at
+          *
         )
       `)
       .order('last_scraped_at', { ascending: false });
@@ -2043,6 +2025,56 @@ function App() {
                                         {token.tokens.found_at_makers != null ? formatNumber(token.tokens.found_at_makers) : '0'}
                                       </div>
                                     </div>
+                                    <div>
+                                      <div style={{ color: '#888', fontSize: '0.65rem', textTransform: 'uppercase', marginBottom: '2px' }}>Found GT</div>
+                                      <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                                        {(token.tokens?.found_at_gt_score ?? token.gt_score) != null ? (
+                                          <span style={{
+                                            color: (token.tokens?.found_at_gt_score ?? token.gt_score) >= 70 ? '#10b981' : (token.tokens?.found_at_gt_score ?? token.gt_score) >= 40 ? '#f59e0b' : '#ef4444',
+                                            background: (token.tokens?.found_at_gt_score ?? token.gt_score) >= 70 ? 'rgba(16, 185, 129, 0.15)' : (token.tokens?.found_at_gt_score ?? token.gt_score) >= 40 ? 'rgba(245, 158, 11, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                                            padding: '2px 6px',
+                                            borderRadius: '4px',
+                                            fontSize: '0.78rem'
+                                          }}>
+                                            GT {Math.round(token.tokens?.found_at_gt_score ?? token.gt_score)}/100
+                                          </span>
+                                        ) : (
+                                          <span style={{ color: '#666' }}>N/A</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <div style={{ color: '#888', fontSize: '0.65rem', textTransform: 'uppercase', marginBottom: '2px' }}>Found Dev</div>
+                                      <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                                        {(token.tokens?.found_at_dev_holding_pct ?? token.dev_holding_pct) != null ? (
+                                          <span style={{
+                                            color: (token.tokens?.found_at_dev_holding_pct ?? token.dev_holding_pct) <= 5 ? '#10b981' : (token.tokens?.found_at_dev_holding_pct ?? token.dev_holding_pct) <= 15 ? '#f59e0b' : '#ef4444',
+                                            background: 'rgba(59, 130, 246, 0.12)',
+                                            padding: '2px 6px',
+                                            borderRadius: '4px',
+                                            fontSize: '0.78rem'
+                                          }}>
+                                            Dev {Number(token.tokens?.found_at_dev_holding_pct ?? token.dev_holding_pct).toFixed(1)}%
+                                          </span>
+                                        ) : (
+                                          <span style={{ color: '#666' }}>N/A</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <div style={{ color: '#888', fontSize: '0.65rem', textTransform: 'uppercase', marginBottom: '2px' }}>Found LP</div>
+                                      <div style={{ fontSize: '0.82rem', fontWeight: 600, display: 'flex', alignItems: 'center' }}>
+                                        {(token.tokens?.found_at_is_lp_locked ?? token.is_lp_locked) ? (
+                                          <span style={{ color: '#10b981', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                            🔒 Locked
+                                          </span>
+                                        ) : (
+                                          <span style={{ color: '#71717a', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                            🔓 Unlocked
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
                                   </div>
 
                                   <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -2486,10 +2518,40 @@ function App() {
                                   {token.tokens.found_at_txns != null ? formatNumber(token.tokens.found_at_txns) : '0'}
                                 </div>
                               </div>
-                              <div style={{ gridColumn: 'span 2' }}>
+                              <div>
                                 <div style={{ color: '#888', fontSize: '0.6rem', textTransform: 'uppercase', marginBottom: '2px' }}>Makers</div>
                                 <div style={{ color: '#fff', fontSize: '0.75rem' }}>
                                   {token.tokens.found_at_makers != null ? formatNumber(token.tokens.found_at_makers) : '0'}
+                                </div>
+                              </div>
+                              <div>
+                                <div style={{ color: '#888', fontSize: '0.6rem', textTransform: 'uppercase', marginBottom: '2px' }}>Found GT</div>
+                                <div style={{ fontSize: '0.75rem', fontWeight: 600 }}>
+                                  {(token.tokens?.found_at_gt_score ?? token.gt_score) != null ? (
+                                    <span style={{ color: (token.tokens?.found_at_gt_score ?? token.gt_score) >= 70 ? '#10b981' : (token.tokens?.found_at_gt_score ?? token.gt_score) >= 40 ? '#f59e0b' : '#ef4444' }}>
+                                      GT {Math.round(token.tokens?.found_at_gt_score ?? token.gt_score)}/100
+                                    </span>
+                                  ) : 'N/A'}
+                                </div>
+                              </div>
+                              <div>
+                                <div style={{ color: '#888', fontSize: '0.6rem', textTransform: 'uppercase', marginBottom: '2px' }}>Found Dev</div>
+                                <div style={{ fontSize: '0.75rem', fontWeight: 600 }}>
+                                  {(token.tokens?.found_at_dev_holding_pct ?? token.dev_holding_pct) != null ? (
+                                    <span style={{ color: '#60a5fa' }}>
+                                      Dev {Number(token.tokens?.found_at_dev_holding_pct ?? token.dev_holding_pct).toFixed(1)}%
+                                    </span>
+                                  ) : 'N/A'}
+                                </div>
+                              </div>
+                              <div>
+                                <div style={{ color: '#888', fontSize: '0.6rem', textTransform: 'uppercase', marginBottom: '2px' }}>Found LP</div>
+                                <div style={{ fontSize: '0.75rem', fontWeight: 600, display: 'flex', alignItems: 'center' }}>
+                                  {(token.tokens?.found_at_is_lp_locked ?? token.is_lp_locked) ? (
+                                    <span style={{ color: '#10b981' }}>🔒 Locked</span>
+                                  ) : (
+                                    <span style={{ color: '#71717a' }}>🔓 Unlocked</span>
+                                  )}
                                 </div>
                               </div>
                             </div>
