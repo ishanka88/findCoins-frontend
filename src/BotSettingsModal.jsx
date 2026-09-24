@@ -464,17 +464,25 @@ export function BotSettingsModal({ onClose }) {
 
                         <div style={{ marginBottom: '20px' }}>
                             <label style={{ display: 'block', color: '#888', marginBottom: '8px', fontSize: '0.9rem' }}>
-                                Max Tokens Per Strategy
+                                Max Pages Per Strategy
                             </label>
                             <input
                                 type="number"
-                                min="10"
-                                max="500"
-                                value={settings?.max_tokens_per_strategy || 100}
-                                onChange={(e) => setSettings({ ...settings, max_tokens_per_strategy: e.target.value })}
+                                min="1"
+                                max="10"
+                                value={(() => {
+                                    const val = Number(settings?.max_tokens_per_strategy || 1);
+                                    return val >= 10 ? Math.max(1, Math.round(val / 100)) : Math.max(1, val);
+                                })()}
+                                onChange={(e) => {
+                                    const pages = Math.max(1, parseInt(e.target.value, 10) || 1);
+                                    setSettings({ ...settings, max_tokens_per_strategy: pages * 100 });
+                                }}
                                 style={{ width: '100%', padding: '10px', background: '#1e1e20', border: '1px solid #333', borderRadius: '6px', color: 'white' }}
                             />
-                            <small style={{ color: '#666', fontSize: '0.8rem' }}>Maximum tokens to process per strategy per interval</small>
+                            <small style={{ color: '#666', fontSize: '0.8rem' }}>
+                                Number of pages to scrape (e.g. 1 = 100 tokens, 2 = 200 tokens, 3 = 300 tokens)
+                            </small>
                         </div>
 
                         <div style={{ marginBottom: '24px' }}>
