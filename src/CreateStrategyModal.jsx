@@ -165,6 +165,10 @@ export function CreateStrategyModal({ onClose, onCreated, initialData = null }) 
     // Form State
     const [formData, setFormData] = useState({
         name: '',
+        // Rank by & Order
+        rankBy: '',
+        order: 'desc',
+
         // Toggles
         hasProfile: true,
         isBoosted: false,
@@ -227,6 +231,8 @@ export function CreateStrategyModal({ onClose, onCreated, initialData = null }) 
             newForm.name = initialData.name;
             newForm.hasProfile = p.profile === 1 || p.profile === '1';
             newForm.isBoosted = p.boosted === 1 || p.boosted === '1';
+            newForm.rankBy = p.rankBy || '';
+            newForm.order = p.order || 'desc';
 
             // Restore Numeric Fields
             const keys = Object.keys(formData);
@@ -277,6 +283,9 @@ export function CreateStrategyModal({ onClose, onCreated, initialData = null }) 
         ];
 
         keys.forEach(k => { if (formData[k]) dsParams[k] = formData[k]; });
+
+        if (formData.rankBy) dsParams.rankBy = formData.rankBy;
+        if (formData.order) dsParams.order = formData.order;
 
         dsParams.chainIds = selectedPlatforms.join(',');
         if (selectedDexes.length > 0) dsParams.dexIds = selectedDexes.join(',');
@@ -423,6 +432,72 @@ export function CreateStrategyModal({ onClose, onCreated, initialData = null }) 
                                 </button>
                             ))}
                         </div>
+
+                        {/* Rank by & Order */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.8rem', color: '#aaa', marginBottom: '6px', fontWeight: 500 }}>
+                                    Rank by
+                                </label>
+                                <select
+                                    name="rankBy"
+                                    value={formData.rankBy}
+                                    onChange={handleChange}
+                                    style={{
+                                        width: '100%', padding: '10px 12px', background: '#1e1e20',
+                                        border: '1px solid #333', borderRadius: '6px', color: 'white',
+                                        fontSize: '0.9rem', outline: 'none', cursor: 'pointer'
+                                    }}
+                                >
+                                    <option value="">Default (Trending 24H)</option>
+                                    <optgroup label="Trending">
+                                        <option value="trendingScoreM5">Trending 5M</option>
+                                        <option value="trendingScoreH1">Trending 1H</option>
+                                        <option value="trendingScoreH6">Trending 6H</option>
+                                        <option value="trendingScoreH24">Trending 24H</option>
+                                    </optgroup>
+                                    <optgroup label="Activity">
+                                        <option value="txns">Txns</option>
+                                        <option value="buys">Buys</option>
+                                        <option value="sells">Sells</option>
+                                        <option value="volume">Volume</option>
+                                    </optgroup>
+                                    <optgroup label="Price Change">
+                                        <option value="priceChangeM5">5M price change</option>
+                                        <option value="priceChangeH1">1H price change</option>
+                                        <option value="priceChangeH6">6H price change</option>
+                                        <option value="priceChangeH24">24H price change</option>
+                                    </optgroup>
+                                    <optgroup label="Market Metrics">
+                                        <option value="liquidity">Liquidity</option>
+                                        <option value="marketCap">Market cap</option>
+                                        <option value="fdv">FDV</option>
+                                        <option value="pairAge">Pair age</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.8rem', color: '#aaa', marginBottom: '6px', fontWeight: 500 }}>
+                                    Order
+                                </label>
+                                <select
+                                    name="order"
+                                    value={formData.order}
+                                    onChange={handleChange}
+                                    style={{
+                                        width: '100%', padding: '10px 12px', background: '#1e1e20',
+                                        border: '1px solid #333', borderRadius: '6px', color: 'white',
+                                        fontSize: '0.9rem', outline: 'none', cursor: 'pointer'
+                                    }}
+                                >
+                                    <option value="desc">Descending</option>
+                                    <option value="asc">Ascending</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div style={{ height: '1px', background: '#2a2a2d', margin: '20px 0' }}></div>
 
                         {/* General */}
                         <FilterRow label="Liquidity" minName="minLiq" maxName="maxLiq" prefix="$" formData={formData} onChange={handleChange} />
