@@ -149,6 +149,7 @@ function App() {
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [minimizedStrats, setMinimizedStrats] = useState({});
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [makersTimeframe, setMakersTimeframe] = useState('h24');
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -638,6 +639,16 @@ function App() {
     } else if (sortBy === 'favorited_at') {
       valA = a.tokens?.favorited_at ? new Date(a.tokens.favorited_at).getTime() : 0;
       valB = b.tokens?.favorited_at ? new Date(b.tokens.favorited_at).getTime() : 0;
+    } else if (sortBy === 'makers') {
+      const getM = (tok) => {
+        const tf = tok.makers_data?.[makersTimeframe];
+        if (tf && tf.makers !== undefined) return tf.makers;
+        if (makersTimeframe === 'h24') return tok.makers || ((tok.buyers_24h || 0) + (tok.sellers_24h || 0));
+        if (makersTimeframe === 'h6') return (tok.buyers_6h || 0) + (tok.sellers_6h || 0);
+        return 0;
+      };
+      valA = getM(a);
+      valB = getM(b);
     }
 
     if (valA === valB) return 0;
@@ -1596,7 +1607,56 @@ function App() {
                   <th onClick={() => handleSortToggle('change_h24')} style={{ cursor: 'pointer', userSelect: 'none', padding: '16px', fontWeight: '600', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>5M / 1H / 24H {getSortIcon('change_h24')}</th>
                   <th onClick={() => handleSortToggle('mcap')} style={{ cursor: 'pointer', userSelect: 'none', padding: '16px', fontWeight: '600', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>MC / Price {getSortIcon('mcap')}</th>
                   <th onClick={() => handleSortToggle('holders')} style={{ cursor: 'pointer', userSelect: 'none', padding: '16px', fontWeight: '600', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>Holders {getSortIcon('holders')}</th>
-                  <th onClick={() => handleSortToggle('makers')} style={{ cursor: 'pointer', userSelect: 'none', padding: '16px', fontWeight: '600', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>Makers {getSortIcon('makers')}</th>
+                  <th style={{ padding: '14px 16px', userSelect: 'none' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <div
+                        onClick={() => handleSortToggle('makers')}
+                        style={{ cursor: 'pointer', fontWeight: '600', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}
+                        title="Sort by Traders/Makers"
+                      >
+                        Makers {getSortIcon('makers')}
+                      </div>
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                          display: 'inline-flex',
+                          background: '#18181b',
+                          borderRadius: '6px',
+                          border: '1px solid #333',
+                          padding: '2px',
+                          gap: '2px',
+                          width: 'fit-content'
+                        }}
+                      >
+                        {[
+                          { id: 'h24', label: '24H' },
+                          { id: 'h6', label: '6H' },
+                          { id: 'h1', label: '1H' },
+                          { id: 'm5', label: '5M' }
+                        ].map((item) => (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => setMakersTimeframe(item.id)}
+                            style={{
+                              background: makersTimeframe === item.id ? '#3b82f6' : 'transparent',
+                              color: makersTimeframe === item.id ? '#ffffff' : '#71717a',
+                              border: 'none',
+                              borderRadius: '4px',
+                              padding: '2px 5px',
+                              cursor: 'pointer',
+                              fontSize: '0.65rem',
+                              fontWeight: makersTimeframe === item.id ? 700 : 500,
+                              transition: 'all 0.15s ease'
+                            }}
+                            title={`Switch to ${item.label} Traders, Buyers & Sellers`}
+                          >
+                            {item.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </th>
                   <th onClick={() => handleSortToggle('volume')} style={{ cursor: 'pointer', userSelect: 'none', padding: '16px', fontWeight: '600', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>Volume / Txns {getSortIcon('volume')}</th>
                   <th onClick={() => handleSortToggle('liquidity')} style={{ cursor: 'pointer', userSelect: 'none', padding: '16px', fontWeight: '600', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>Liquidity {getSortIcon('liquidity')}</th>
                   <th style={{ padding: '16px', fontWeight: '600', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>Action</th>
@@ -1861,7 +1921,36 @@ function App() {
                             Updated {formatTimeAgo(token.holders_updated_at)}
                           </div>
                         </td>
-                        <td style={{ padding: '16px', color: '#fff', fontSize: '0.9rem' }}>{formatNumber(token.makers)}</td>
+                        <td style={{ padding: '16px', color: '#fff' }}>
+                          {(() => {
+                            const tfData = token.makers_data?.[makersTimeframe];
+                            const b = tfData?.buyers ?? (makersTimeframe === 'h24' ? (token.buyers_24h || 0) : (makersTimeframe === 'h6' ? (token.buyers_6h || 0) : 0));
+                            const s = tfData?.sellers ?? (makersTimeframe === 'h24' ? (token.sellers_24h || 0) : (makersTimeframe === 'h6' ? (token.sellers_6h || 0) : 0));
+                            const total = tfData?.makers ?? (b + s || (makersTimeframe === 'h24' ? (token.makers || 0) : 0));
+
+                            return (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                                <div style={{ fontSize: '0.92rem', fontWeight: 600, color: '#f4f4f5', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                  <span>{formatNumber(total)}</span>
+                                  {(b > 0 || s > 0) && (
+                                    <span style={{ fontSize: '0.78rem', fontWeight: 500, color: '#71717a' }}>
+                                      (<span style={{ color: '#10b981' }} title={`${formatNumber(b)} buyers`}>{formatNumber(b)}</span>
+                                      <span style={{ color: '#52525b', margin: '0 2px' }}>/</span>
+                                      <span style={{ color: '#ef4444' }} title={`${formatNumber(s)} sellers`}>{formatNumber(s)}</span>)
+                                    </span>
+                                  )}
+                                </div>
+                                {(b > 0 || s > 0) && (
+                                  <div style={{ fontSize: '0.68rem', color: '#71717a', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <span style={{ color: '#10b981' }}>B:{formatNumber(b)}</span>
+                                    <span style={{ color: '#3f3f46' }}>•</span>
+                                    <span style={{ color: '#ef4444' }}>S:{formatNumber(s)}</span>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
+                        </td>
                         <td style={{ padding: '16px' }}>
                           <div style={{ color: '#fff', fontSize: '0.9rem' }}>{formatNumber(token.volume)}</div>
                           <div style={{ color: '#00C6FF', fontSize: '0.75rem', fontWeight: '500' }}>{formatNumber(token.txns)} txns</div>
