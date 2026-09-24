@@ -22,7 +22,7 @@ function formatTimeAgo(timestamp) {
 export function BotSettingsModal({ onClose }) {
     const [settings, setSettings] = useState({
         scraping_interval_seconds: 60,
-        max_tokens_per_strategy: 100,
+        max_tokens_per_strategy: 2,
         enable_holder_check: true
     });
     const [alertConfig, setAlertConfig] = useState({
@@ -381,7 +381,7 @@ export function BotSettingsModal({ onClose }) {
                     .from('bot_settings')
                     .update({
                         scraping_interval_seconds: Number(settings?.scraping_interval_seconds || 60),
-                        max_tokens_per_strategy: Number(settings?.max_tokens_per_strategy || 100),
+                        max_tokens_per_strategy: Number(settings?.max_tokens_per_strategy || 2),
                         enable_holder_check: settings?.enable_holder_check ?? true
                     })
                     .eq('id', 1),
@@ -471,18 +471,13 @@ export function BotSettingsModal({ onClose }) {
                                 min="1"
                                 max="10"
                                 value={(() => {
-                                    const val = Number(settings?.max_tokens_per_strategy || 1);
-                                    return val >= 10 ? Math.max(1, Math.round(val / 100)) : Math.max(1, val);
+                                    const val = Number(settings?.max_tokens_per_strategy || 2);
+                                    return val > 10 ? Math.max(1, Math.round(val / 100)) : Math.max(1, val);
                                 })()}
-                                onChange={(e) => {
-                                    const pages = Math.max(1, parseInt(e.target.value, 10) || 1);
-                                    setSettings({ ...settings, max_tokens_per_strategy: pages * 100 });
-                                }}
+                                onChange={(e) => setSettings({ ...settings, max_tokens_per_strategy: Math.max(1, parseInt(e.target.value, 10) || 1) })}
                                 style={{ width: '100%', padding: '10px', background: '#1e1e20', border: '1px solid #333', borderRadius: '6px', color: 'white' }}
                             />
-                            <small style={{ color: '#666', fontSize: '0.8rem' }}>
-                                Number of pages to scrape (e.g. 1 = 100 tokens, 2 = 200 tokens, 3 = 300 tokens)
-                            </small>
+                            <small style={{ color: '#666', fontSize: '0.8rem' }}>Number of pages to scrape per strategy (e.g. 1, 2, or 3 pages)</small>
                         </div>
 
                         <div style={{ marginBottom: '24px' }}>
