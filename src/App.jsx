@@ -643,8 +643,11 @@ function App() {
       const getM = (tok) => {
         const tf = tok.makers_data?.[makersTimeframe];
         if (tf && tf.makers !== undefined) return tf.makers;
-        if (makersTimeframe === 'h24') return tok.makers || ((tok.buyers_24h || 0) + (tok.sellers_24h || 0));
-        if (makersTimeframe === 'h6') return (tok.buyers_6h || 0) + (tok.sellers_6h || 0);
+        const suf = makersTimeframe === 'h24' ? '24h' : makersTimeframe === 'h6' ? '6h' : makersTimeframe === 'h1' ? '1h' : '5m';
+        const b = tok[`buyers_${suf}`] || 0;
+        const s = tok[`sellers_${suf}`] || 0;
+        if (b > 0 || s > 0) return b + s;
+        if (makersTimeframe === 'h24') return tok.makers || 0;
         return 0;
       };
       valA = getM(a);
@@ -1924,14 +1927,21 @@ function App() {
                         <td style={{ padding: '16px', color: '#fff' }}>
                           {(() => {
                             const tfData = token.makers_data?.[makersTimeframe];
-                            const b = tfData?.buyers ?? (makersTimeframe === 'h24' ? (token.buyers_24h || 0) : (makersTimeframe === 'h6' ? (token.buyers_6h || 0) : 0));
-                            const s = tfData?.sellers ?? (makersTimeframe === 'h24' ? (token.sellers_24h || 0) : (makersTimeframe === 'h6' ? (token.sellers_6h || 0) : 0));
+                            const suf = makersTimeframe === 'h24' ? '24h' : makersTimeframe === 'h6' ? '6h' : makersTimeframe === 'h1' ? '1h' : '5m';
+                            const b = tfData?.buyers ?? token[`buyers_${suf}`] ?? (makersTimeframe === 'h24' ? (token.buyers_24h || 0) : 0);
+                            const s = tfData?.sellers ?? token[`sellers_${suf}`] ?? (makersTimeframe === 'h24' ? (token.sellers_24h || 0) : 0);
+                            const buys = tfData?.buys ?? token[`buys_${suf}`] ?? 0;
+                            const sells = tfData?.sells ?? token[`sells_${suf}`] ?? 0;
                             const total = tfData?.makers ?? (b + s || (makersTimeframe === 'h24' ? (token.makers || 0) : 0));
+                            const tfLabel = makersTimeframe.toUpperCase();
 
                             return (
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                              <div
+                                style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}
+                                title={`${tfLabel} Activity: ${formatNumber(total)} Traders (${formatNumber(b)} Buyers, ${formatNumber(s)} Sellers) | ${formatNumber(buys + sells)} Orders (${formatNumber(buys)} Buys, ${formatNumber(sells)} Sells)`}
+                              >
                                 <div style={{ fontSize: '0.92rem', fontWeight: 600, color: '#f4f4f5', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                  <span>{formatNumber(total)}</span>
+                                  <span title={`${formatNumber(total)} unique makers/traders`}>{formatNumber(total)}</span>
                                   {(b > 0 || s > 0) && (
                                     <span style={{ fontSize: '0.78rem', fontWeight: 500, color: '#71717a' }}>
                                       (<span style={{ color: '#10b981' }} title={`${formatNumber(b)} buyers`}>{formatNumber(b)}</span>
@@ -1940,13 +1950,23 @@ function App() {
                                     </span>
                                   )}
                                 </div>
-                                {(b > 0 || s > 0) && (
+                                {(buys > 0 || sells > 0) ? (
+                                  <div style={{ fontSize: '0.7rem', color: '#71717a', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <span style={{ color: '#10b981', fontWeight: 500 }} title={`${formatNumber(buys)} buy orders`}>
+                                      {formatNumber(buys)} Buys
+                                    </span>
+                                    <span style={{ color: '#3f3f46' }}>•</span>
+                                    <span style={{ color: '#ef4444', fontWeight: 500 }} title={`${formatNumber(sells)} sell orders`}>
+                                      {formatNumber(sells)} Sells
+                                    </span>
+                                  </div>
+                                ) : (b > 0 || s > 0) ? (
                                   <div style={{ fontSize: '0.68rem', color: '#71717a', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                     <span style={{ color: '#10b981' }}>B:{formatNumber(b)}</span>
                                     <span style={{ color: '#3f3f46' }}>•</span>
                                     <span style={{ color: '#ef4444' }}>S:{formatNumber(s)}</span>
                                   </div>
-                                )}
+                                ) : null}
                               </div>
                             );
                           })()}
