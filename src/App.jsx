@@ -2338,22 +2338,33 @@ function App() {
                     className="glass-card mobile-token-card"
                     onClick={() => handleToggleExpand(token)}
                     style={{
-                      padding: '14px',
+                      padding: '16px 14px 14px 14px',
                       marginBottom: '12px',
                       cursor: 'pointer',
                       border: expandedToken === token.token_id ? '1px solid rgba(0,198,255,0.3)' : '1px solid var(--glass-border)',
                       background: expandedToken === token.token_id ? 'rgba(0,198,255,0.05)' : 'var(--glass-bg)',
-                      transition: 'all 0.2s ease'
+                      transition: 'all 0.2s ease',
+                      position: 'relative'
                     }}
                   >
+                    {/* Rank in top corner */}
+                    <div style={{
+                      position: 'absolute',
+                      top: '4px',
+                      left: '12px',
+                      fontSize: '0.62rem',
+                      fontWeight: 800,
+                      color: '#555',
+                      lineHeight: 1,
+                      pointerEvents: 'none',
+                      userSelect: 'none'
+                    }}>
+                      #{token.dex_rank || '-'}
+                    </div>
+
                     {/* Token Header - 2 Lines aligned with Avatar */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', minWidth: 0 }}>
-                      {/* Rank */}
-                      <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#555', minWidth: '16px', flexShrink: 0 }}>
-                        #{token.dex_rank || '-'}
-                      </div>
-
-                      {/* Logo - Centered vertically across both lines */}
+                      {/* Logo - Centered vertically across both lines, flush aligned with MCAP box below */}
                       {token.tokens.logo_url && token.tokens.logo_url !== 'N/A' ? (
                         <img src={token.tokens.logo_url} alt={token.tokens.symbol} style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
                       ) : (
