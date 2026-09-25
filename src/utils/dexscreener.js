@@ -75,7 +75,12 @@ export const generateDexScreenerUrl = (filters) => {
     // Ads not standard param? assuming check box logic handled it in scraper or we ignore.
 
     // Construct final URL
-    // If chainIds provided, typically DexScreener might assume global filter.
-    // Let's use the root with query params.
-    return `https://dexscreener.com/?${params.toString()}`;
+    // For mobile app deep-linking to work correctly, it is often better to put the specific chain in the URL path 
+    // instead of relying entirely on the root domain if only one chain is selected.
+    let baseUrl = 'https://dexscreener.com';
+    if (filters.chainIds && !filters.chainIds.includes(',')) {
+        baseUrl = `${baseUrl}/${filters.chainIds.trim().toLowerCase()}`;
+    }
+
+    return `${baseUrl}?${params.toString()}`;
 };
