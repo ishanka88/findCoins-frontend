@@ -2114,7 +2114,7 @@ function App() {
                                     border: '1px solid rgba(255,255,255,0.05)'
                                   }}>
                                     <div style={{ gridColumn: 'span 1' }}>
-                                      <div style={{ color: '#888', fontSize: '0.65rem', textTransform: 'uppercase', marginBottom: '2px' }}>MC / Holders</div>
+                                      <div style={{ color: '#888', fontSize: '0.65rem', textTransform: 'uppercase', marginBottom: '2px' }}>Found MC / Holders</div>
                                       <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>
                                         <span style={{ color: '#f59e0b' }}>
                                           {token.tokens.found_at_mcap != null ? formatMcap(token.tokens.found_at_mcap) : 'N/A'}
@@ -2126,31 +2126,31 @@ function App() {
                                       </div>
                                     </div>
                                     <div>
-                                      <div style={{ color: '#888', fontSize: '0.65rem', textTransform: 'uppercase', marginBottom: '2px' }}>Liq</div>
+                                      <div style={{ color: '#888', fontSize: '0.65rem', textTransform: 'uppercase', marginBottom: '2px' }}>Found Liq</div>
                                       <div style={{ color: '#fff', fontSize: '0.85rem', fontWeight: 600 }}>
                                         {token.tokens.found_at_liquidity != null ? formatMcap(token.tokens.found_at_liquidity) : 'N/A'}
                                       </div>
                                     </div>
                                     <div>
-                                      <div style={{ color: '#888', fontSize: '0.65rem', textTransform: 'uppercase', marginBottom: '2px' }}>Price</div>
+                                      <div style={{ color: '#888', fontSize: '0.65rem', textTransform: 'uppercase', marginBottom: '2px' }}>Found Price</div>
                                       <div style={{ color: '#00C6FF', fontSize: '0.85rem', fontWeight: 600 }}>
                                         {token.tokens.found_at_price != null ? `$${token.tokens.found_at_price.toFixed(6)}` : 'N/A'}
                                       </div>
                                     </div>
                                     <div>
-                                      <div style={{ color: '#888', fontSize: '0.65rem', textTransform: 'uppercase', marginBottom: '2px' }}>Vol</div>
+                                      <div style={{ color: '#888', fontSize: '0.65rem', textTransform: 'uppercase', marginBottom: '2px' }}>Found Vol</div>
                                       <div style={{ color: '#fff', fontSize: '0.8rem' }}>
                                         {token.tokens.found_at_volume != null ? formatMcap(token.tokens.found_at_volume) : '0'}
                                       </div>
                                     </div>
                                     <div>
-                                      <div style={{ color: '#888', fontSize: '0.65rem', textTransform: 'uppercase', marginBottom: '2px' }}>Txns</div>
+                                      <div style={{ color: '#888', fontSize: '0.65rem', textTransform: 'uppercase', marginBottom: '2px' }}>Found Txns</div>
                                       <div style={{ color: '#fff', fontSize: '0.8rem' }}>
                                         {token.tokens.found_at_txns != null ? formatNumber(token.tokens.found_at_txns) : '0'}
                                       </div>
                                     </div>
                                     <div>
-                                      <div style={{ color: '#888', fontSize: '0.65rem', textTransform: 'uppercase', marginBottom: '2px' }}>Makers</div>
+                                      <div style={{ color: '#888', fontSize: '0.65rem', textTransform: 'uppercase', marginBottom: '2px' }}>Found Makers</div>
                                       <div style={{ color: '#fff', fontSize: '0.8rem' }}>
                                         {token.tokens.found_at_makers != null ? formatNumber(token.tokens.found_at_makers) : '0'}
                                       </div>
@@ -2662,43 +2662,43 @@ function App() {
                               border: '1px solid rgba(255,255,255,0.05)'
                             }}>
                               <div>
-                                <div style={{ color: '#888', fontSize: '0.6rem', textTransform: 'uppercase', marginBottom: '2px' }}>MC</div>
+                                <div style={{ color: '#888', fontSize: '0.6rem', textTransform: 'uppercase', marginBottom: '2px' }}>Found MC</div>
                                 <div style={{ color: '#f59e0b', fontSize: '0.8rem', fontWeight: 600 }}>
                                   {token.tokens.found_at_mcap != null ? formatMcap(token.tokens.found_at_mcap) : 'N/A'}
                                 </div>
                               </div>
                               <div>
-                                <div style={{ color: '#888', fontSize: '0.6rem', textTransform: 'uppercase', marginBottom: '2px' }}>Holders</div>
+                                <div style={{ color: '#888', fontSize: '0.6rem', textTransform: 'uppercase', marginBottom: '2px' }}>Found Holders</div>
                                 <div style={{ color: '#fff', fontSize: '0.8rem', fontWeight: 600 }}>
                                   {token.tokens.found_at_holders != null ? formatNumber(token.tokens.found_at_holders) : '0'}
                                 </div>
                               </div>
                               <div>
-                                <div style={{ color: '#888', fontSize: '0.6rem', textTransform: 'uppercase', marginBottom: '2px' }}>Liq</div>
+                                <div style={{ color: '#888', fontSize: '0.6rem', textTransform: 'uppercase', marginBottom: '2px' }}>Found Liq</div>
                                 <div style={{ color: '#fff', fontSize: '0.8rem', fontWeight: 600 }}>
                                   {token.tokens.found_at_liquidity != null ? formatMcap(token.tokens.found_at_liquidity) : 'N/A'}
                                 </div>
                               </div>
                               <div>
-                                <div style={{ color: '#888', fontSize: '0.6rem', textTransform: 'uppercase', marginBottom: '2px' }}>Price</div>
+                                <div style={{ color: '#888', fontSize: '0.6rem', textTransform: 'uppercase', marginBottom: '2px' }}>Found Price</div>
                                 <div style={{ color: '#00C6FF', fontSize: '0.75rem', fontWeight: 600 }}>
                                   {token.tokens.found_at_price != null ? `$${token.tokens.found_at_price.toFixed(6)}` : 'N/A'}
                                 </div>
                               </div>
                               <div>
-                                <div style={{ color: '#888', fontSize: '0.6rem', textTransform: 'uppercase', marginBottom: '2px' }}>Vol</div>
+                                <div style={{ color: '#888', fontSize: '0.6rem', textTransform: 'uppercase', marginBottom: '2px' }}>Found Vol</div>
                                 <div style={{ color: '#fff', fontSize: '0.75rem' }}>
                                   {token.tokens.found_at_volume != null ? formatMcap(token.tokens.found_at_volume) : '0'}
                                 </div>
                               </div>
                               <div>
-                                <div style={{ color: '#888', fontSize: '0.6rem', textTransform: 'uppercase', marginBottom: '2px' }}>Txns</div>
+                                <div style={{ color: '#888', fontSize: '0.6rem', textTransform: 'uppercase', marginBottom: '2px' }}>Found Txns</div>
                                 <div style={{ color: '#fff', fontSize: '0.75rem' }}>
                                   {token.tokens.found_at_txns != null ? formatNumber(token.tokens.found_at_txns) : '0'}
                                 </div>
                               </div>
                               <div>
-                                <div style={{ color: '#888', fontSize: '0.6rem', textTransform: 'uppercase', marginBottom: '2px' }}>Makers</div>
+                                <div style={{ color: '#888', fontSize: '0.6rem', textTransform: 'uppercase', marginBottom: '2px' }}>Found Makers</div>
                                 <div style={{ color: '#fff', fontSize: '0.75rem' }}>
                                   {token.tokens.found_at_makers != null ? formatNumber(token.tokens.found_at_makers) : '0'}
                                 </div>
