@@ -1325,7 +1325,11 @@ function App() {
                           {Object.entries(strat.dexscreener_params).map(([k, v]) => (
                             <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
                               <span style={{ color: '#888' }}>{k}</span>
-                              <span style={{ color: '#00C6FF' }}>{v.toString()}</span>
+                              <span style={{ color: '#00C6FF' }}>
+                                {['maxFdv', 'minFdv', 'min24HVol', 'max24HVol', 'minMarketCap', 'maxMarketCap', 'minLiq', 'maxLiq'].includes(k) && !isNaN(Number(v)) 
+                                  ? formatNumber(Number(v)) 
+                                  : v.toString()}
+                              </span>
                             </div>
                           ))}
 
