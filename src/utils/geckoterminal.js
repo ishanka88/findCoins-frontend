@@ -42,6 +42,7 @@ export const generateGeckoTerminalUrl = (filters = {}) => {
     if (filters.max24HVol) params.set('volume_24h[lte]', filters.max24HVol);
     if (filters.minLiq) params.set('liquidity[gte]', filters.minLiq);
     if (filters.maxLiq) params.set('liquidity[lte]', filters.maxLiq);
-
+    if (filters.minFdv) params.set('fdv_in_usd[gte]', filters.minFdv);
+    if (filters.maxFdv) params.set('fdv_in_usd[lte]', filters.maxFdv);
     return `https://www.geckoterminal.com/${network}/pools?${params.toString()}`;
 };
