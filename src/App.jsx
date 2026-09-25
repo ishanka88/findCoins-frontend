@@ -876,8 +876,14 @@ function App() {
     if (!num) return '$0';
     if (num >= 1000000000) return `$${(num / 1000000000).toFixed(2)}B`;
     if (num >= 1000000) return `$${(num / 1000000).toFixed(2)}M`;
-    if (num >= 1000) return `$${(num / 1000).toFixed(1)}K`;
+    if (num >= 1000) return `$${(num / 1000).toFixed(0)}K`;
     return `$${num.toFixed(0)}`;
+  };
+
+  const formatDevPct = (val) => {
+    if (val == null) return '';
+    const num = Number(val);
+    return num > 9.9 ? num.toFixed(0) : num.toFixed(1);
   };
 
   const formatMcapClipboard = (num) => {
@@ -1777,8 +1783,8 @@ function App() {
                                       borderRadius: '4px',
                                       background: token.dev_holding_pct > 20 ? 'rgba(239,68,68,0.15)' : 'rgba(59,130,246,0.15)',
                                       color: token.dev_holding_pct > 20 ? '#ef4444' : '#60a5fa'
-                                    }} title={`Developer Holdings: ${Number(token.dev_holding_pct).toFixed(1)}%`}>
-                                      Dev {Number(token.dev_holding_pct).toFixed(1)}%
+                                    }} title={`Developer Holdings: ${formatDevPct(token.dev_holding_pct)}%`}>
+                                      Dev {formatDevPct(token.dev_holding_pct)}%
                                     </span>
                                   )}
                                   {token.is_lp_locked && (
@@ -2180,7 +2186,7 @@ function App() {
                                             borderRadius: '4px',
                                             fontSize: '0.78rem'
                                           }}>
-                                            Dev {Number(token.tokens?.found_at_dev_holding_pct ?? token.dev_holding_pct).toFixed(1)}%
+                                            Dev {formatDevPct(token.tokens?.found_at_dev_holding_pct ?? token.dev_holding_pct)}%
                                           </span>
                                         ) : (
                                           <span style={{ color: '#666' }}>N/A</span>
@@ -2352,8 +2358,8 @@ function App() {
                                 borderRadius: '4px',
                                 background: token.dev_holding_pct > 20 ? 'rgba(239,68,68,0.15)' : 'rgba(59,130,246,0.15)',
                                 color: token.dev_holding_pct > 20 ? '#ef4444' : '#60a5fa'
-                              }} title={`Developer Holdings: ${Number(token.dev_holding_pct).toFixed(1)}%`}>
-                                Dev {Number(token.dev_holding_pct).toFixed(1)}%
+                              }} title={`Developer Holdings: ${formatDevPct(token.dev_holding_pct)}%`}>
+                                Dev {formatDevPct(token.dev_holding_pct)}%
                               </span>
                             )}
                             {token.is_lp_locked && (
@@ -2714,7 +2720,7 @@ function App() {
                                 <div style={{ fontSize: '0.75rem', fontWeight: 600 }}>
                                   {(token.tokens?.found_at_dev_holding_pct ?? token.dev_holding_pct) != null ? (
                                     <span style={{ color: '#60a5fa' }}>
-                                      Dev {Number(token.tokens?.found_at_dev_holding_pct ?? token.dev_holding_pct).toFixed(1)}%
+                                      Dev {formatDevPct(token.tokens?.found_at_dev_holding_pct ?? token.dev_holding_pct)}%
                                     </span>
                                   ) : 'N/A'}
                                 </div>
@@ -2910,13 +2916,13 @@ function App() {
                   <div>
                     <div style={{ color: '#888', fontSize: '0.7rem', marginBottom: '2px' }}>Dev Holdings</div>
                     <div style={{ fontWeight: 700, color: detailsToken.dev_holding_pct > 20 ? '#ef4444' : '#60a5fa' }}>
-                      {detailsToken.dev_holding_pct != null ? `${Number(detailsToken.dev_holding_pct).toFixed(1)}%` : 'Available on Scrape'}
+                      {detailsToken.dev_holding_pct != null ? `${formatDevPct(detailsToken.dev_holding_pct)}%` : 'Available on Scrape'}
                     </div>
                   </div>
                   <div>
                     <div style={{ color: '#888', fontSize: '0.7rem', marginBottom: '2px' }}>Top 10 Wallets</div>
                     <div style={{ fontWeight: 700, color: '#fff' }}>
-                      {detailsToken.top_10_holding_pct != null ? `${Number(detailsToken.top_10_holding_pct).toFixed(1)}%` : 'Available on Scrape'}
+                      {detailsToken.top_10_holding_pct != null ? `${formatDevPct(detailsToken.top_10_holding_pct)}%` : 'Available on Scrape'}
                     </div>
                   </div>
                   <div>
