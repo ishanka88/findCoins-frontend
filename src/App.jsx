@@ -68,16 +68,14 @@ function calculateHoldersChange(currentHolders, foundHolders) {
   const curr = parseInt(currentHolders, 10);
   const found = parseInt(foundHolders, 10);
   if (isNaN(curr) || isNaN(found) || found === 0) return null;
-  if (curr >= 10000) return null; // When capped at > 10K, suppress misleading percentage calculations
   return ((curr - found) / found) * 100;
 }
 
-// Helper to format holder numbers (caps at > 10K)
+// Helper to format holder numbers
 function formatHolders(val) {
   if (val == null || val === undefined || val === '') return '-';
   const n = typeof val === 'number' ? val : parseInt(val, 10);
   if (isNaN(n)) return val;
-  if (n >= 10000) return '> 10K';
   return n.toLocaleString();
 }
 
