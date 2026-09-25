@@ -148,7 +148,14 @@ function App() {
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [minimizedStrats, setMinimizedStrats] = useState({});
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-  const [makersTimeframe, setMakersTimeframe] = useState('h24');
+  const [makersTimeframe, setMakersTimeframeState] = useState(() => {
+    return localStorage.getItem('makersTimeframePref') || 'h24';
+  });
+
+  const setMakersTimeframe = (tf) => {
+    setMakersTimeframeState(tf);
+    localStorage.setItem('makersTimeframePref', tf);
+  };
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
