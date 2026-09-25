@@ -1607,7 +1607,7 @@ function App() {
               <thead>
                 <tr style={{ borderBottom: '1px solid #333', background: '#121212' }}>
                   <th onClick={() => handleSortToggle('dex_rank', 'asc')} style={{ cursor: 'pointer', userSelect: 'none', padding: '16px', fontWeight: '600', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>Token {getSortIcon('dex_rank')}</th>
-                  <th onClick={() => handleSortToggle('change_h24')} style={{ cursor: 'pointer', userSelect: 'none', padding: '16px', fontWeight: '600', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>5M / 1H / 24H {getSortIcon('change_h24')}</th>
+
                   <th onClick={() => handleSortToggle('mcap')} style={{ cursor: 'pointer', userSelect: 'none', padding: '16px', fontWeight: '600', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>MC / Price {getSortIcon('mcap')}</th>
                   <th onClick={() => handleSortToggle('holders')} style={{ cursor: 'pointer', userSelect: 'none', padding: '16px', fontWeight: '600', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>Holders {getSortIcon('holders')}</th>
                   <th style={{ padding: '14px 16px', userSelect: 'none' }}>
@@ -1662,6 +1662,7 @@ function App() {
                   </th>
                   <th onClick={() => handleSortToggle('volume')} style={{ cursor: 'pointer', userSelect: 'none', padding: '16px', fontWeight: '600', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>Volume / Txns {getSortIcon('volume')}</th>
                   <th onClick={() => handleSortToggle('liquidity')} style={{ cursor: 'pointer', userSelect: 'none', padding: '16px', fontWeight: '600', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>Liquidity {getSortIcon('liquidity')}</th>
+                  <th onClick={() => handleSortToggle('change_h24')} style={{ cursor: 'pointer', userSelect: 'none', padding: '16px', fontWeight: '600', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>5M / 1H / 24H {getSortIcon('change_h24')}</th>
                   <th style={{ padding: '16px', fontWeight: '600', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>Action</th>
                 </tr>
               </thead>
@@ -1858,13 +1859,7 @@ function App() {
                             </div>
                           </div>
                         </td>
-                        <td style={{ padding: '16px' }}>
-                          <div style={{ display: 'flex', gap: '8px', fontSize: '0.8rem' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column' }}><span>5m</span>{formatPct(token.change_m5)}</div>
-                            <div style={{ display: 'flex', flexDirection: 'column' }}><span>1h</span>{formatPct(token.change_h1)}</div>
-                            <div style={{ display: 'flex', flexDirection: 'column' }}><span>24h</span>{formatPct(token.change_h24)}</div>
-                          </div>
-                        </td>
+
                         <td
                           style={{ padding: '16px' }}
                           title={`MC - ${token.tokens.found_at_mcap != null ? formatMcap(token.tokens.found_at_mcap) : 'N/A'}\nHol - ${token.tokens.found_at_holders != null ? token.tokens.found_at_holders : 'N/A'}\n${token.tokens.found_at ? formatDetailedTimeAgo(new Date(token.tokens.found_at).getTime()) : 'N/A'}`}
@@ -1976,6 +1971,13 @@ function App() {
                           <div style={{ color: '#00C6FF', fontSize: '0.75rem', fontWeight: '500' }}>{formatNumber(token.txns)} txns</div>
                         </td>
                         <td style={{ padding: '16px', color: '#fff', fontSize: '0.9rem' }}>{formatMcap(token.liquidity)}</td>
+                        <td style={{ padding: '16px' }}>
+                          <div style={{ display: 'flex', gap: '8px', fontSize: '0.8rem' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column' }}><span>5m</span>{formatPct(token.change_m5)}</div>
+                            <div style={{ display: 'flex', flexDirection: 'column' }}><span>1h</span>{formatPct(token.change_h1)}</div>
+                            <div style={{ display: 'flex', flexDirection: 'column' }}><span>24h</span>{formatPct(token.change_h24)}</div>
+                          </div>
+                        </td>
                         <td style={{ padding: '16px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <button
