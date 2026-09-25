@@ -2345,107 +2345,132 @@ function App() {
                       transition: 'all 0.2s'
                     }}
                   >
-                    {/* Token Header - Compact & Packed with Actions */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    {/* Token Header - Compact 1-Row Layout */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '8px', minWidth: 0 }}>
                       {/* Rank */}
-                      <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#555', minWidth: '18px' }}>
+                      <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#555', minWidth: '16px', flexShrink: 0 }}>
                         #{token.dex_rank || '-'}
                       </div>
 
                       {/* Logo */}
                       {token.tokens.logo_url && token.tokens.logo_url !== 'N/A' ? (
-                        <img src={token.tokens.logo_url} alt={token.tokens.symbol} style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }} />
+                        <img src={token.tokens.logo_url} alt={token.tokens.symbol} style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
                       ) : (
-                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#333', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', color: '#666' }}>
+                        <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#333', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', color: '#666', flexShrink: 0 }}>
                           {token.tokens.symbol?.charAt(0)}
                         </div>
                       )}
 
-                      {/* Symbol & Age */}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontWeight: 'bold', color: '#fff', fontSize: '0.85rem' }}>{token.tokens.symbol}</span>
-                          <button
-                            onClick={(e) => handleToggleFavorite(e, token)}
-                            style={{
-                              background: 'transparent',
-                              border: 'none',
-                              cursor: 'pointer',
-                              padding: '2px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center'
-                            }}
-                          >
-                            <Star
-                              size={14}
-                              fill={token.tokens?.is_favorite ? "#f59e0b" : "none"}
-                              color={token.tokens?.is_favorite ? "#f59e0b" : "#444"}
-                            />
-                          </button>
-                          <span className={`badge ${token.is_gained ? 'badge-green' : 'badge-red'}`} style={{ fontSize: '0.55rem', padding: '1px 3px' }}>
-                            {token.is_gained ? 'W' : 'L'}
+                      {/* Symbol, Badges & Age - All in 1 sleek line */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', minWidth: 0, flexShrink: 1, overflow: 'hidden' }}>
+                        <span style={{
+                          fontWeight: 'bold',
+                          color: '#fff',
+                          fontSize: '0.85rem',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          maxWidth: '75px'
+                        }}>
+                          {token.tokens.symbol}
+                        </span>
+
+                        <button
+                          onClick={(e) => handleToggleFavorite(e, token)}
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                            padding: '1px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0
+                          }}
+                        >
+                          <Star
+                            size={12}
+                            fill={token.tokens?.is_favorite ? "#f59e0b" : "none"}
+                            color={token.tokens?.is_favorite ? "#f59e0b" : "#444"}
+                          />
+                        </button>
+
+                        <span className={`badge ${token.is_gained ? 'badge-green' : 'badge-red'}`} style={{ fontSize: '0.55rem', padding: '1px 3px', flexShrink: 0 }}>
+                          {token.is_gained ? 'W' : 'L'}
+                        </span>
+
+                        {token.dex_age && (
+                          <span style={{ fontSize: '0.65rem', fontWeight: 600, color: formatAgeCol(token.dex_age).color, flexShrink: 0 }}>
+                            {token.dex_age}
                           </span>
-                          {token.dex_age && (
-                            <span style={{ fontSize: '0.65rem', fontWeight: 600, color: formatAgeCol(token.dex_age).color }}>
-                              {token.dex_age}
-                            </span>
-                          )}
-                        </div>
-                        {/* GeckoTerminal Security & Distribution Badges - Mobile */}
-                        {(token.gt_score != null || token.dev_holding_pct != null || token.is_lp_locked) && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
-                            {token.gt_score != null && (
-                              <span style={{
-                                fontSize: '0.6rem',
-                                fontWeight: 700,
-                                padding: '1px 4px',
-                                borderRadius: '4px',
-                                background: token.gt_score >= 70 ? 'rgba(34,197,94,0.15)' : token.gt_score >= 40 ? 'rgba(234,179,8,0.15)' : 'rgba(239,68,68,0.15)',
-                                color: token.gt_score >= 70 ? '#22c55e' : token.gt_score >= 40 ? '#eab308' : '#ef4444'
-                              }} title={`Gecko Trust Score: ${Math.round(token.gt_score)}/100`}>
-                                GT {Math.round(token.gt_score)}
-                              </span>
-                            )}
-                            {token.dev_holding_pct != null && (
-                              <span style={{
-                                fontSize: '0.6rem',
-                                fontWeight: 700,
-                                padding: '1px 4px',
-                                borderRadius: '4px',
-                                background: token.dev_holding_pct > 20 ? 'rgba(239,68,68,0.15)' : 'rgba(59,130,246,0.15)',
-                                color: token.dev_holding_pct > 20 ? '#ef4444' : '#60a5fa'
-                              }} title={`Developer Holdings: ${formatDevPct(token.dev_holding_pct)}%`}>
-                                Dev {formatDevPct(token.dev_holding_pct)}%
-                              </span>
-                            )}
-                            {token.is_lp_locked && (
-                              <span title="Liquidity Locked / Burned" style={{ fontSize: '0.6rem', padding: '1px 4px', borderRadius: '4px', background: 'rgba(34,197,94,0.15)', color: '#22c55e', fontWeight: 600 }}>
-                                🔒 LP
-                              </span>
-                            )}
-                          </div>
+                        )}
+
+                        {/* GeckoTerminal Security & Distribution Badges - Inline */}
+                        {token.gt_score != null && (
+                          <span style={{
+                            fontSize: '0.58rem',
+                            fontWeight: 700,
+                            padding: '1px 4px',
+                            borderRadius: '3px',
+                            background: token.gt_score >= 70 ? 'rgba(34,197,94,0.15)' : token.gt_score >= 40 ? 'rgba(234,179,8,0.15)' : 'rgba(239,68,68,0.15)',
+                            color: token.gt_score >= 70 ? '#22c55e' : token.gt_score >= 40 ? '#eab308' : '#ef4444',
+                            whiteSpace: 'nowrap',
+                            flexShrink: 0
+                          }} title={`Gecko Trust Score: ${Math.round(token.gt_score)}/100`}>
+                            GT {Math.round(token.gt_score)}
+                          </span>
+                        )}
+
+                        {token.dev_holding_pct != null && (
+                          <span style={{
+                            fontSize: '0.58rem',
+                            fontWeight: 700,
+                            padding: '1px 4px',
+                            borderRadius: '3px',
+                            background: token.dev_holding_pct > 20 ? 'rgba(239,68,68,0.15)' : 'rgba(59,130,246,0.15)',
+                            color: token.dev_holding_pct > 20 ? '#ef4444' : '#60a5fa',
+                            whiteSpace: 'nowrap',
+                            flexShrink: 0
+                          }} title={`Developer Holdings: ${formatDevPct(token.dev_holding_pct)}%`}>
+                            Dev {formatDevPct(token.dev_holding_pct)}%
+                          </span>
+                        )}
+
+                        {token.is_lp_locked && (
+                          <span title="Liquidity Locked / Burned" style={{
+                            fontSize: '0.58rem',
+                            padding: '1px 4px',
+                            borderRadius: '3px',
+                            background: 'rgba(34,197,94,0.15)',
+                            color: '#22c55e',
+                            fontWeight: 600,
+                            whiteSpace: 'nowrap',
+                            flexShrink: 0
+                          }}>
+                            🔒 LP
+                          </span>
                         )}
                       </div>
 
                       {/* Quick Actions */}
-                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', gap: '5px', alignItems: 'center', marginLeft: 'auto', flexShrink: 0 }}>
                         {(() => {
                           const mcChange = calculateMcChange(token.mcap, token.tokens.found_at_mcap);
                           if (mcChange !== null) {
                             return (
-                              <span style={{ fontSize: '0.65rem', fontWeight: '600', color: mcChange > 0 ? '#10b981' : (mcChange < 0 ? '#ef4444' : '#888'), marginRight: '4px' }}>
+                              <span style={{ fontSize: '0.65rem', fontWeight: '700', color: mcChange > 0 ? '#10b981' : (mcChange < 0 ? '#ef4444' : '#888'), marginRight: '2px', whiteSpace: 'nowrap' }}>
                                 {mcChange > 0 ? '+' : ''}{Math.round(mcChange)}%
                               </span>
                             );
                           }
                           return null;
                         })()}
+
                         <button
                           className="btn-icon-small"
                           onClick={(e) => handleCopy(e, token.tokens.contract_address, token.token_id)}
                           title="Copy Contract Address"
-                          style={{ width: '24px', height: '24px', padding: 0, position: 'relative' }}
+                          style={{ width: '22px', height: '22px', padding: 0, position: 'relative' }}
                         >
                           {copiedId === token.token_id && (
                             <span style={{
@@ -2468,11 +2493,12 @@ function App() {
                             </span>
                           )}
                           {copiedId === token.token_id ? (
-                            <Check size={12} color="#22c55e" />
+                            <Check size={11} color="#22c55e" />
                           ) : (
-                            <Copy size={12} />
+                            <Copy size={11} />
                           )}
                         </button>
+
                         <a
                           href={`https://dexscreener.com/solana/${token.tokens.contract_address}`}
                           target="_blank"
@@ -2481,81 +2507,103 @@ function App() {
                             e.stopPropagation();
                             handleCopy(e, `${formatMcapClipboard(token.mcap)} - ${formatHolders(token.holders)}`, `${token.token_id}_metrics`);
                           }}
+                          title="DexScreener"
                           style={{ display: 'flex', alignItems: 'center' }}
                         >
-                          <img src="https://solscan.io/_next/static/media/dexscreener.e36090e0.png" alt="Dex" style={{ width: '16px', height: '16px', borderRadius: '2px' }} />
+                          <img src="https://solscan.io/_next/static/media/dexscreener.e36090e0.png" alt="Dex" style={{ width: '15px', height: '15px', borderRadius: '2px' }} />
                         </a>
-                        <a href={`https://rugcheck.xyz/tokens/${token.tokens.contract_address}`} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center' }}>
-                          <ShieldAlert size={16} color="#ef4444" />
+
+                        <a
+                          className="mobile-action-extra"
+                          href={`https://rugcheck.xyz/tokens/${token.tokens.contract_address}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          title="RugCheck"
+                          style={{ display: 'flex', alignItems: 'center' }}
+                        >
+                          <ShieldAlert size={15} color="#ef4444" />
                         </a>
-                        <a href={`https://axiom.trade/meme/${token.tokens.contract_address}?chain=sol`} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center' }}>
-                          <img src="https://axiom.trade/axiom.svg" alt="Axiom" style={{ width: '16px', height: '16px' }} />
+
+                        <a
+                          className="mobile-action-extra"
+                          href={`https://axiom.trade/meme/${token.tokens.contract_address}?chain=sol`}
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          title="Axiom Trade"
+                          style={{ display: 'flex', alignItems: 'center' }}
+                        >
+                          <img src="https://axiom.trade/axiom.svg" alt="Axiom" style={{ width: '15px', height: '15px' }} />
                         </a>
+
                         <ChevronDown
-                          size={16}
+                          size={15}
                           style={{
                             color: '#666',
                             transform: expandedToken === token.token_id ? 'rotate(180deg)' : 'rotate(0deg)',
                             transition: 'transform 0.2s',
-                            marginLeft: '4px'
+                            marginLeft: '2px'
                           }}
                         />
                       </div>
                     </div>
 
-                    {/* Key Metrics Grid - Compact */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 0.8fr 1fr 0.8fr', gap: '6px', marginBottom: '0' }}>
+                    {/* Key Metrics Grid - Compact 4-Column Row */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.9fr 0.8fr 0.9fr 0.8fr', gap: '5px', marginBottom: '0' }}>
                       {/* MCAP & Holders */}
-                      <div style={{ background: 'rgba(255,255,255,0.02)', padding: '6px', borderRadius: '4px', position: 'relative' }}>
-                        <div style={{ fontSize: '0.6rem', color: '#666', marginBottom: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ background: 'rgba(255,255,255,0.02)', padding: '5px 7px', borderRadius: '4px', position: 'relative' }}>
+                        <div style={{ fontSize: '0.58rem', color: '#666', marginBottom: '3px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <span>MCAP | HOLDERS</span>
-                          <button
-                            className={`btn-icon-small ${token.force_holder_refresh ? 'loading' : ''}`}
-                            onClick={(e) => handleManualRefresh(e, token.token_id)}
-                            disabled={token.force_holder_refresh}
-                            title="Refresh Holders"
-                            style={{ width: '12px', height: '12px', padding: 0, border: 'none', background: 'transparent' }}
-                          >
-                            <RefreshCw size={10} className={token.force_holder_refresh ? 'animate-spin' : ''} style={{ opacity: 0.7 }} />
-                          </button>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <span style={{ fontSize: '0.55rem', color: '#555' }}>
+                              {formatTimeAgo(token.holders_updated_at)}
+                            </span>
+                            <button
+                              className={`btn-icon-small ${token.force_holder_refresh ? 'loading' : ''}`}
+                              onClick={(e) => handleManualRefresh(e, token.token_id)}
+                              disabled={token.force_holder_refresh}
+                              title="Refresh Holders"
+                              style={{ width: '12px', height: '12px', padding: 0, border: 'none', background: 'transparent' }}
+                            >
+                              <RefreshCw size={9} className={token.force_holder_refresh ? 'animate-spin' : ''} style={{ opacity: 0.7 }} />
+                            </button>
+                          </div>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#f59e0b' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'nowrap' }}>
+                          <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#f59e0b', whiteSpace: 'nowrap' }}>
                             {formatMcap(token.mcap)}
                           </span>
-                          <span style={{ fontSize: '0.85rem', color: '#666' }}>|</span>
-                          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#10b981' }}>
+                          <span style={{ fontSize: '0.82rem', color: '#444' }}>|</span>
+                          <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#10b981', whiteSpace: 'nowrap' }}>
                             {formatHolders(token.holders)}
                           </span>
                           {(() => {
                             const holdersChange = calculateHoldersChange(token.holders, token.tokens.found_at_holders);
                             if (holdersChange !== null) {
                               return (
-                                <span style={{ fontSize: '0.65rem', fontWeight: '600', color: holdersChange > 0 ? '#10b981' : (holdersChange < 0 ? '#ef4444' : '#888'), marginLeft: '2px' }}>
+                                <span style={{ fontSize: '0.62rem', fontWeight: '600', color: holdersChange > 0 ? '#10b981' : (holdersChange < 0 ? '#ef4444' : '#888'), whiteSpace: 'nowrap' }}>
                                   {holdersChange > 0 ? '+' : ''}{Math.round(holdersChange)}%
                                 </span>
                               );
                             }
                             return null;
                           })()}
-                          <span style={{ fontSize: '0.55rem', color: '#666', opacity: 0.8, marginLeft: 'auto' }}>
-                            {formatTimeAgo(token.holders_updated_at)}
-                          </span>
                         </div>
                       </div>
 
                       {/* Volume */}
-                      <div style={{ background: 'rgba(255,255,255,0.02)', padding: '6px', borderRadius: '4px' }}>
-                        <div style={{ fontSize: '0.6rem', color: '#666', marginBottom: '2px' }}>VOL</div>
-                        <div style={{ fontSize: '0.75rem', fontWeight: 400, color: '#00C6FF' }}>
+                      <div style={{ background: 'rgba(255,255,255,0.02)', padding: '5px 6px', borderRadius: '4px' }}>
+                        <div style={{ fontSize: '0.58rem', color: '#666', marginBottom: '3px' }}>VOL</div>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 500, color: '#00C6FF', whiteSpace: 'nowrap' }}>
                           {formatMcap(token.volume)}
                         </div>
                       </div>
 
                       {/* Makers */}
-                      <div style={{ background: 'rgba(255,255,255,0.02)', padding: '6px', borderRadius: '4px' }}>
-                        <div style={{ fontSize: '0.6rem', color: '#666', marginBottom: '2px' }}>MAKERS</div>
-                        <div style={{ fontSize: '0.75rem', fontWeight: 400, color: '#a855f7' }}>
+                      <div style={{ background: 'rgba(255,255,255,0.02)', padding: '5px 6px', borderRadius: '4px' }}>
+                        <div style={{ fontSize: '0.58rem', color: '#666', marginBottom: '3px' }}>MAKERS</div>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 500, color: '#a855f7', whiteSpace: 'nowrap' }}>
                           {(() => {
                             const tfData = token.makers_data?.[makersTimeframe];
                             const suf = makersTimeframe === 'h24' ? '24h' : makersTimeframe === 'h6' ? '6h' : makersTimeframe === 'h1' ? '1h' : '5m';
@@ -2568,9 +2616,9 @@ function App() {
                       </div>
 
                       {/* Price Change */}
-                      <div style={{ background: 'rgba(255,255,255,0.02)', padding: '6px', borderRadius: '4px' }}>
-                        <div style={{ fontSize: '0.6rem', color: '#666', marginBottom: '2px' }}>24H</div>
-                        <div style={{ fontSize: '0.75rem', fontWeight: 400, color: token.change_h24 >= 0 ? '#10b981' : '#ef4444' }}>
+                      <div style={{ background: 'rgba(255,255,255,0.02)', padding: '5px 6px', borderRadius: '4px' }}>
+                        <div style={{ fontSize: '0.58rem', color: '#666', marginBottom: '3px' }}>24H</div>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 500, color: token.change_h24 >= 0 ? '#10b981' : '#ef4444', whiteSpace: 'nowrap' }}>
                           {token.change_h24?.toFixed(1)}%
                         </div>
                       </div>
@@ -2581,32 +2629,112 @@ function App() {
                       <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #222' }}>
 
                         {/* Action Icons */}
-                        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', alignItems: 'center' }}>
-                          <button
-                            className="btn-icon-small"
-                            onClick={(e) => handleOpenAllLinks(e, token.tokens.contract_address)}
-                            title="Open All Links"
-                            style={{ width: '28px', height: '28px', padding: 0, background: 'rgba(0,198,255,0.05)', border: '1px solid rgba(0,198,255,0.2)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                          <a
+                            href={`https://dexscreener.com/solana/${token.tokens.contract_address}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            title="DexScreener"
+                            style={{
+                              padding: '5px 9px',
+                              background: 'rgba(0,198,255,0.05)',
+                              border: '1px solid rgba(0,198,255,0.2)',
+                              borderRadius: '6px',
+                              color: '#fff',
+                              fontSize: '0.7rem',
+                              textDecoration: 'none',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '5px'
+                            }}
                           >
-                            <Layers size={14} color="#00C6FF" />
-                          </button>
+                            <img src="https://solscan.io/_next/static/media/dexscreener.e36090e0.png" alt="Dex" style={{ width: '13px', height: '13px', borderRadius: '2px' }} />
+                            DexScreener
+                          </a>
+                          <a
+                            href={`https://rugcheck.xyz/tokens/${token.tokens.contract_address}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            title="RugCheck"
+                            style={{
+                              padding: '5px 9px',
+                              background: 'rgba(239,68,68,0.05)',
+                              border: '1px solid rgba(239,68,68,0.2)',
+                              borderRadius: '6px',
+                              color: '#ef4444',
+                              fontSize: '0.7rem',
+                              textDecoration: 'none',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '5px'
+                            }}
+                          >
+                            <ShieldAlert size={13} color="#ef4444" />
+                            RugCheck
+                          </a>
+                          <a
+                            href={`https://axiom.trade/meme/${token.tokens.contract_address}?chain=sol`}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            title="Axiom Trade"
+                            style={{
+                              padding: '5px 9px',
+                              background: 'rgba(168,85,247,0.05)',
+                              border: '1px solid rgba(168,85,247,0.2)',
+                              borderRadius: '6px',
+                              color: '#a855f7',
+                              fontSize: '0.7rem',
+                              textDecoration: 'none',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '5px'
+                            }}
+                          >
+                            <img src="https://axiom.trade/axiom.svg" alt="Axiom" style={{ width: '13px', height: '13px' }} />
+                            Axiom
+                          </a>
                           <a
                             href={`https://solscan.io/token/${token.tokens.contract_address}#holders`}
                             target="_blank"
                             rel="noreferrer"
                             onClick={(e) => e.stopPropagation()}
                             title="Solscan Holders"
-                            style={{ width: '28px', height: '28px', padding: 0, background: 'rgba(0,198,255,0.05)', border: '1px solid rgba(0,198,255,0.2)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                            style={{
+                              padding: '5px 9px',
+                              background: 'rgba(0,198,255,0.05)',
+                              border: '1px solid rgba(0,198,255,0.2)',
+                              borderRadius: '6px',
+                              color: '#00C6FF',
+                              fontSize: '0.7rem',
+                              textDecoration: 'none',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '5px'
+                            }}
                           >
-                            <Search size={14} color="#00C6FF" />
+                            <Search size={13} color="#00C6FF" />
+                            Solscan
                           </a>
+                          <button
+                            className="btn-icon-small"
+                            onClick={(e) => handleOpenAllLinks(e, token.tokens.contract_address)}
+                            title="Open All Links"
+                            style={{ padding: '5px 9px', background: 'rgba(0,198,255,0.05)', border: '1px solid rgba(0,198,255,0.2)', borderRadius: '6px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px', color: '#00C6FF', fontSize: '0.7rem' }}
+                          >
+                            <Layers size={13} color="#00C6FF" />
+                            Open All
+                          </button>
                           <button
                             className="btn-icon-small"
                             onClick={(e) => handleBlacklistToken(e, token.token_id)}
                             title="Remove permanently"
-                            style={{ width: '28px', height: '28px', padding: 0, background: 'rgba(255,80,80,0.05)', border: '1px solid rgba(255,80,80,0.2)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                            style={{ padding: '5px 9px', background: 'rgba(255,80,80,0.05)', border: '1px solid rgba(255,80,80,0.2)', borderRadius: '6px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px', color: '#ff5050', fontSize: '0.7rem' }}
                           >
-                            <Trash2 size={14} color="#ff5050" />
+                            <Trash2 size={13} color="#ff5050" />
+                            Remove
                           </button>
                         </div>
 

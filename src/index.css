@@ -764,3 +764,15 @@ body {
     justify-content: center !important;
   }
 }
+
+/* Mobile Token Card Actions */
+.mobile-action-extra {
+  display: flex;
+  align-items: center;
+}
+
+@media (max-width: 420px) {
+  .mobile-action-extra {
+    display: none !important;
+  }
+}
