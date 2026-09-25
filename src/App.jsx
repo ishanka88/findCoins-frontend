@@ -2212,7 +2212,45 @@ function App() {
                                         )}
                                       </div>
                                     </div>
+                                    <div>
+                                      <div style={{ color: '#888', fontSize: '0.65rem', textTransform: 'uppercase', marginBottom: '2px' }}>Found Top 10</div>
+                                      <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                                        {(token.tokens?.found_at_top_10_holding_pct ?? token.tokens?.found_at_data?.top_10_holding_pct ?? token.top_10_holding_pct) != null ? (
+                                          <span style={{ color: '#fff' }}>
+                                            {formatDevPct(token.tokens?.found_at_top_10_holding_pct ?? token.tokens?.found_at_data?.top_10_holding_pct ?? token.top_10_holding_pct)}%
+                                          </span>
+                                        ) : (
+                                          <span style={{ color: '#666' }}>N/A</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <div style={{ color: '#888', fontSize: '0.65rem', textTransform: 'uppercase', marginBottom: '2px' }}>Found Mint / Frz</div>
+                                      <div style={{ fontSize: '0.78rem', fontWeight: 600, display: 'flex', gap: '4px' }}>
+                                        <span style={{ color: (token.tokens?.found_at_is_mintable ?? token.tokens?.found_at_data?.is_mintable ?? token.is_mintable) ? '#ef4444' : '#10b981' }}>
+                                          {(token.tokens?.found_at_is_mintable ?? token.tokens?.found_at_data?.is_mintable ?? token.is_mintable) ? 'Mint ⚠️' : 'Mint ✓'}
+                                        </span>
+                                        <span style={{ color: '#444' }}>|</span>
+                                        <span style={{ color: (token.tokens?.found_at_is_freezable ?? token.tokens?.found_at_data?.is_freezable ?? token.is_freezable) ? '#ef4444' : '#10b981' }}>
+                                          {(token.tokens?.found_at_is_freezable ?? token.tokens?.found_at_data?.is_freezable ?? token.is_freezable) ? 'Frz ⚠️' : 'Frz ✓'}
+                                        </span>
+                                      </div>
+                                    </div>
                                   </div>
+
+                                  {token.tokens?.found_at_data?.makers_data?.h24 && (
+                                    <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', background: 'rgba(255,255,255,0.02)', padding: '6px 10px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                                      <span style={{ color: '#888' }}>Found 24h Buyers / Sellers:</span>
+                                      <span style={{ fontWeight: 600 }}>
+                                        <span style={{ color: '#10b981' }}>{token.tokens.found_at_data.makers_data.h24.buyers || 0} B</span>
+                                        <span style={{ color: '#555', margin: '0 4px' }}>/</span>
+                                        <span style={{ color: '#ef4444' }}>{token.tokens.found_at_data.makers_data.h24.sellers || 0} S</span>
+                                        <span style={{ color: '#777', marginLeft: '6px' }}>
+                                          ({token.tokens.found_at_data.makers_data.h24.buys || 0} buys / {token.tokens.found_at_data.makers_data.h24.sells || 0} sells)
+                                        </span>
+                                      </span>
+                                    </div>
+                                  )}
 
                                   <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                     <span style={{ color: '#888', fontSize: '0.75rem' }}>Found Chg (5m/1h/6h/24h):</span>
@@ -2914,39 +2952,69 @@ function App() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', fontSize: '0.8rem' }}>
                   <div>
                     <div style={{ color: '#888', fontSize: '0.7rem', marginBottom: '2px' }}>Gecko Trust Score</div>
-                    <div style={{ fontWeight: 700, color: detailsToken.gt_score >= 70 ? '#10b981' : detailsToken.gt_score >= 40 ? '#f59e0b' : '#ef4444' }}>
-                      {detailsToken.gt_score != null ? `${Math.round(detailsToken.gt_score)} / 100` : 'Available on Scrape'}
-                    </div>
+                    {(() => {
+                      const score = detailsToken.found_at_gt_score ?? detailsToken.gt_score;
+                      return (
+                        <div style={{ fontWeight: 700, color: score >= 70 ? '#10b981' : score >= 40 ? '#f59e0b' : '#ef4444' }}>
+                          {score != null ? `${Math.round(score)} / 100` : 'Available on Scrape'}
+                        </div>
+                      );
+                    })()}
                   </div>
                   <div>
                     <div style={{ color: '#888', fontSize: '0.7rem', marginBottom: '2px' }}>Dev Holdings</div>
-                    <div style={{ fontWeight: 700, color: detailsToken.dev_holding_pct > 20 ? '#ef4444' : '#60a5fa' }}>
-                      {detailsToken.dev_holding_pct != null ? `${formatDevPct(detailsToken.dev_holding_pct)}%` : 'Available on Scrape'}
-                    </div>
+                    {(() => {
+                      const devPct = detailsToken.found_at_dev_holding_pct ?? detailsToken.dev_holding_pct;
+                      return (
+                        <div style={{ fontWeight: 700, color: devPct > 20 ? '#ef4444' : '#60a5fa' }}>
+                          {devPct != null ? `${formatDevPct(devPct)}%` : 'Available on Scrape'}
+                        </div>
+                      );
+                    })()}
                   </div>
                   <div>
                     <div style={{ color: '#888', fontSize: '0.7rem', marginBottom: '2px' }}>Top 10 Wallets</div>
-                    <div style={{ fontWeight: 700, color: '#fff' }}>
-                      {detailsToken.top_10_holding_pct != null ? `${formatDevPct(detailsToken.top_10_holding_pct)}%` : 'Available on Scrape'}
-                    </div>
+                    {(() => {
+                      const top10 = detailsToken.found_at_top_10_holding_pct ?? detailsToken.found_at_data?.top_10_holding_pct ?? detailsToken.top_10_holding_pct;
+                      return (
+                        <div style={{ fontWeight: 700, color: '#fff' }}>
+                          {top10 != null ? `${formatDevPct(top10)}%` : 'Available on Scrape'}
+                        </div>
+                      );
+                    })()}
                   </div>
                   <div>
                     <div style={{ color: '#888', fontSize: '0.7rem', marginBottom: '2px' }}>LP Status</div>
-                    <div style={{ fontWeight: 700, color: detailsToken.is_lp_locked ? '#10b981' : '#f59e0b' }}>
-                      {detailsToken.is_lp_locked ? 'Locked 🔒' : 'Unlocked'}
-                    </div>
+                    {(() => {
+                      const isLp = detailsToken.found_at_is_lp_locked ?? detailsToken.found_at_data?.is_lp_locked ?? detailsToken.is_lp_locked;
+                      return (
+                        <div style={{ fontWeight: 700, color: isLp ? '#10b981' : '#f59e0b' }}>
+                          {isLp ? 'Locked 🔒' : 'Unlocked'}
+                        </div>
+                      );
+                    })()}
                   </div>
                   <div>
                     <div style={{ color: '#888', fontSize: '0.7rem', marginBottom: '2px' }}>Mint Authority</div>
-                    <div style={{ fontWeight: 700, color: detailsToken.is_mintable ? '#ef4444' : '#10b981' }}>
-                      {detailsToken.is_mintable ? 'Enabled ⚠️' : 'Disabled (Safe)'}
-                    </div>
+                    {(() => {
+                      const isMint = detailsToken.found_at_is_mintable ?? detailsToken.found_at_data?.is_mintable ?? detailsToken.is_mintable;
+                      return (
+                        <div style={{ fontWeight: 700, color: isMint ? '#ef4444' : '#10b981' }}>
+                          {isMint ? 'Enabled ⚠️' : 'Disabled (Safe)'}
+                        </div>
+                      );
+                    })()}
                   </div>
                   <div>
                     <div style={{ color: '#888', fontSize: '0.7rem', marginBottom: '2px' }}>Freeze Authority</div>
-                    <div style={{ fontWeight: 700, color: detailsToken.is_freezable ? '#ef4444' : '#10b981' }}>
-                      {detailsToken.is_freezable ? 'Enabled ⚠️' : 'Disabled (Safe)'}
-                    </div>
+                    {(() => {
+                      const isFreeze = detailsToken.found_at_is_freezable ?? detailsToken.found_at_data?.is_freezable ?? detailsToken.is_freezable;
+                      return (
+                        <div style={{ fontWeight: 700, color: isFreeze ? '#ef4444' : '#10b981' }}>
+                          {isFreeze ? 'Enabled ⚠️' : 'Disabled (Safe)'}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
