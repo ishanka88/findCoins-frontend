@@ -2312,6 +2312,40 @@ function App() {
                             </span>
                           )}
                         </div>
+                        {/* GeckoTerminal Security & Distribution Badges - Mobile */}
+                        {(token.gt_score != null || token.dev_holding_pct != null || token.is_lp_locked) && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
+                            {token.gt_score != null && (
+                              <span style={{
+                                fontSize: '0.6rem',
+                                fontWeight: 700,
+                                padding: '1px 4px',
+                                borderRadius: '4px',
+                                background: token.gt_score >= 70 ? 'rgba(34,197,94,0.15)' : token.gt_score >= 40 ? 'rgba(234,179,8,0.15)' : 'rgba(239,68,68,0.15)',
+                                color: token.gt_score >= 70 ? '#22c55e' : token.gt_score >= 40 ? '#eab308' : '#ef4444'
+                              }} title={`Gecko Trust Score: ${Math.round(token.gt_score)}/100`}>
+                                GT {Math.round(token.gt_score)}
+                              </span>
+                            )}
+                            {token.dev_holding_pct != null && (
+                              <span style={{
+                                fontSize: '0.6rem',
+                                fontWeight: 700,
+                                padding: '1px 4px',
+                                borderRadius: '4px',
+                                background: token.dev_holding_pct > 20 ? 'rgba(239,68,68,0.15)' : 'rgba(59,130,246,0.15)',
+                                color: token.dev_holding_pct > 20 ? '#ef4444' : '#60a5fa'
+                              }} title={`Developer Holdings: ${Number(token.dev_holding_pct).toFixed(1)}%`}>
+                                Dev {Number(token.dev_holding_pct).toFixed(1)}%
+                              </span>
+                            )}
+                            {token.is_lp_locked && (
+                              <span title="Liquidity Locked / Burned" style={{ fontSize: '0.6rem', padding: '1px 4px', borderRadius: '4px', background: 'rgba(34,197,94,0.15)', color: '#22c55e', fontWeight: 600 }}>
+                                🔒 LP
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       {/* Quick Actions */}
@@ -2390,7 +2424,7 @@ function App() {
                     </div>
 
                     {/* Key Metrics Grid - Compact */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 0.8fr', gap: '6px', marginBottom: '0' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 0.8fr 1fr 0.8fr', gap: '6px', marginBottom: '0' }}>
                       {/* MCAP & Holders */}
                       <div style={{ background: 'rgba(255,255,255,0.02)', padding: '6px', borderRadius: '4px', position: 'relative' }}>
                         <div style={{ fontSize: '0.6rem', color: '#666', marginBottom: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -2435,6 +2469,21 @@ function App() {
                         <div style={{ fontSize: '0.6rem', color: '#666', marginBottom: '2px' }}>VOL</div>
                         <div style={{ fontSize: '0.75rem', fontWeight: 400, color: '#00C6FF' }}>
                           {formatMcap(token.volume)}
+                        </div>
+                      </div>
+
+                      {/* Makers */}
+                      <div style={{ background: 'rgba(255,255,255,0.02)', padding: '6px', borderRadius: '4px' }}>
+                        <div style={{ fontSize: '0.6rem', color: '#666', marginBottom: '2px' }}>MAKERS</div>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 400, color: '#a855f7' }}>
+                          {(() => {
+                            const tfData = token.makers_data?.[makersTimeframe];
+                            const suf = makersTimeframe === 'h24' ? '24h' : makersTimeframe === 'h6' ? '6h' : makersTimeframe === 'h1' ? '1h' : '5m';
+                            const b = tfData?.buyers ?? token[`buyers_${suf}`] ?? (makersTimeframe === 'h24' ? (token.buyers_24h || 0) : 0);
+                            const s = tfData?.sellers ?? token[`sellers_${suf}`] ?? (makersTimeframe === 'h24' ? (token.sellers_24h || 0) : 0);
+                            const total = tfData?.makers ?? (b + s || (makersTimeframe === 'h24' ? (token.makers || 0) : 0));
+                            return formatNumber(total);
+                          })()}
                         </div>
                       </div>
 
