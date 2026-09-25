@@ -8,7 +8,8 @@ import { HolderRefreshRulesModal } from './HolderRefreshRulesModal';
 import { BotActivityLog } from './BotActivityLog';
 import { Login } from './Login';
 import { SaveViewOptionsModal } from './SaveViewOptionsModal';
-
+import { generateGeckoTerminalUrl } from './utils/geckoterminal';
+import { generateDexScreenerUrl } from './utils/dexscreener';
 // Helper for detailed time ago (e.g., "1 month and 4 days ago")
 function formatDetailedTimeAgo(timestamp) {
   if (!timestamp) return 'N/A';
@@ -1321,7 +1322,17 @@ function App() {
 
                       {!isStratMinimized(strat.id) && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          <span style={{ fontSize: '0.7rem', color: '#666', borderBottom: '1px solid #222', paddingBottom: '2px' }}>DEXSCREENER PARAMS</span>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #222', paddingBottom: '2px' }}>
+                            <span style={{ fontSize: '0.7rem', color: '#666' }}>DEXSCREENER PARAMS</span>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              <a href={generateGeckoTerminalUrl(strat.dexscreener_params)} target="_blank" rel="noreferrer" title="View Filter on GeckoTerminal" style={{ display: 'flex', alignItems: 'center' }}>
+                                <img src="https://assets.geckoterminal.com/vbj38y62bcljfdditis5y8t73b3d" alt="GeckoTerminal" style={{ width: '12px', height: '12px', borderRadius: '2px' }} />
+                              </a>
+                              <a href={generateDexScreenerUrl(strat.dexscreener_params)} target="_blank" rel="noreferrer" title="View Filter on DexScreener" style={{ display: 'flex', alignItems: 'center' }}>
+                                <img src="https://solscan.io/_next/static/media/dexscreener.e36090e0.png" alt="DexScreener" style={{ width: '12px', height: '12px', borderRadius: '2px' }} />
+                              </a>
+                            </div>
+                          </div>
                           {Object.entries(strat.dexscreener_params).map(([k, v]) => (
                             <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
                               <span style={{ color: '#888' }}>{k}</span>
