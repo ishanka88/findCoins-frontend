@@ -533,8 +533,9 @@ function App() {
     const links = [
       `https://dexscreener.com/solana/${address}`,
       `https://rugcheck.xyz/tokens/${address}`,
+      `https://axiom.trade/meme/${address}?chain=sol`,
+      `https://fomo.family/tokens/solana/${address}`,
       `https://solscan.io/token/${address}#holders`,
-      // Add more links here if needed
     ];
 
     // Try to open all links
@@ -2410,13 +2411,13 @@ function App() {
                             )}
                           </div>
 
-                          {/* Quick Actions (Right aligned) */}
-                          <div style={{ display: 'flex', gap: '5px', alignItems: 'center', flexShrink: 0 }}>
+                          {/* Right: % Change and Expand Arrow */}
+                          <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
                             {(() => {
                               const mcChange = calculateMcChange(token.mcap, token.tokens.found_at_mcap);
                               if (mcChange !== null) {
                                 return (
-                                  <span style={{ fontSize: '0.65rem', fontWeight: '700', color: mcChange > 0 ? '#10b981' : (mcChange < 0 ? '#ef4444' : '#888'), marginRight: '2px', whiteSpace: 'nowrap' }}>
+                                  <span style={{ fontSize: '0.72rem', fontWeight: '700', color: mcChange > 0 ? '#10b981' : (mcChange < 0 ? '#ef4444' : '#888'), whiteSpace: 'nowrap' }}>
                                     {mcChange > 0 ? '+' : ''}{Math.round(mcChange)}%
                                   </span>
                                 );
@@ -2424,79 +2425,10 @@ function App() {
                               return null;
                             })()}
 
-                            <button
-                              type="button"
-                              onClick={(e) => handleCopy(e, token.tokens.contract_address, token.token_id)}
-                              title="Copy Contract Address"
-                              style={{ width: '22px', height: '22px', padding: 0, position: 'relative', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: copiedId === token.token_id ? '#22c55e' : '#888' }}
-                            >
-                              {copiedId === token.token_id && (
-                                <span style={{
-                                  position: 'absolute',
-                                  bottom: '100%',
-                                  left: '50%',
-                                  transform: 'translateX(-50%)',
-                                  backgroundColor: '#22c55e',
-                                  color: 'white',
-                                  padding: '2px 6px',
-                                  borderRadius: '4px',
-                                  fontSize: '0.65rem',
-                                  whiteSpace: 'nowrap',
-                                  marginBottom: '4px',
-                                  zIndex: 10,
-                                  pointerEvents: 'none',
-                                  fontWeight: 'bold'
-                                }}>
-                                  Copied!
-                                </span>
-                              )}
-                              {copiedId === token.token_id ? (
-                                <Check size={12} color="#22c55e" />
-                              ) : (
-                                <Copy size={12} />
-                              )}
-                            </button>
-
-                            <a
-                              href={`https://dexscreener.com/solana/${token.tokens.contract_address}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleCopy(e, `${formatMcapClipboard(token.mcap)} - ${formatHolders(token.holders)}`, `${token.token_id}_metrics`);
-                              }}
-                              title="DexScreener"
-                              style={{ display: 'flex', alignItems: 'center' }}
-                            >
-                              <img src="https://solscan.io/_next/static/media/dexscreener.e36090e0.png" alt="Dex" style={{ width: '15px', height: '15px', borderRadius: '2px' }} />
-                            </a>
-
-                            <a
-                              href={`https://rugcheck.xyz/tokens/${token.tokens.contract_address}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              title="RugCheck"
-                              style={{ display: 'flex', alignItems: 'center' }}
-                            >
-                              <ShieldAlert size={15} color="#ef4444" />
-                            </a>
-
-                            <a
-                              href={`https://axiom.trade/meme/${token.tokens.contract_address}?chain=sol`}
-                              target="_blank"
-                              rel="noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              title="Axiom Trade"
-                              style={{ display: 'flex', alignItems: 'center' }}
-                            >
-                              <img src="https://axiom.trade/axiom.svg" alt="Axiom" style={{ width: '15px', height: '15px' }} />
-                            </a>
-
                             <ChevronDown
-                              size={15}
+                              size={16}
                               style={{
-                                color: '#666',
+                                color: '#888',
                                 transform: expandedToken === token.token_id ? 'rotate(180deg)' : 'rotate(0deg)',
                                 transition: 'transform 0.2s',
                                 marginLeft: '2px'
@@ -2505,9 +2437,10 @@ function App() {
                           </div>
                         </div>
 
-                        {/* LINE 2: GT, Dev, LP badges (Green line marked area) */}
-                        {(token.gt_score != null || token.dev_holding_pct != null || token.is_lp_locked) && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '1px' }}>
+                        {/* LINE 2: Left = Badges (GT, Dev, LP) | Right = Action Icons (Copy, Dex, RugCheck, Axiom, FOMO) */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px', minWidth: 0, marginTop: '2px' }}>
+                          {/* Left: Badges */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', minWidth: 0, flexWrap: 'nowrap', overflow: 'hidden' }}>
                             {token.gt_score != null && (
                               <span style={{
                                 fontSize: '0.62rem',
@@ -2550,7 +2483,90 @@ function App() {
                               </span>
                             )}
                           </div>
-                        )}
+
+                          {/* Right: Action Icons (Copy, DexScreener, RugCheck, Axiom, FOMO) */}
+                          <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
+                            <button
+                              type="button"
+                              onClick={(e) => handleCopy(e, token.tokens.contract_address, token.token_id)}
+                              title="Copy Contract Address"
+                              style={{ width: '20px', height: '20px', padding: 0, position: 'relative', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: copiedId === token.token_id ? '#22c55e' : '#888' }}
+                            >
+                              {copiedId === token.token_id && (
+                                <span style={{
+                                  position: 'absolute',
+                                  bottom: '100%',
+                                  left: '50%',
+                                  transform: 'translateX(-50%)',
+                                  backgroundColor: '#22c55e',
+                                  color: 'white',
+                                  padding: '2px 6px',
+                                  borderRadius: '4px',
+                                  fontSize: '0.65rem',
+                                  whiteSpace: 'nowrap',
+                                  marginBottom: '4px',
+                                  zIndex: 10,
+                                  pointerEvents: 'none',
+                                  fontWeight: 'bold'
+                                }}>
+                                  Copied!
+                                </span>
+                              )}
+                              {copiedId === token.token_id ? (
+                                <Check size={13} color="#22c55e" />
+                              ) : (
+                                <Copy size={13} />
+                              )}
+                            </button>
+
+                            <a
+                              href={`https://dexscreener.com/solana/${token.tokens.contract_address}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCopy(e, `${formatMcapClipboard(token.mcap)} - ${formatHolders(token.holders)}`, `${token.token_id}_metrics`);
+                              }}
+                              title="DexScreener"
+                              style={{ display: 'flex', alignItems: 'center' }}
+                            >
+                              <img src="https://solscan.io/_next/static/media/dexscreener.e36090e0.png" alt="Dex" style={{ width: '15px', height: '15px', borderRadius: '2px' }} />
+                            </a>
+
+                            <a
+                              href={`https://rugcheck.xyz/tokens/${token.tokens.contract_address}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              title="RugCheck"
+                              style={{ display: 'flex', alignItems: 'center' }}
+                            >
+                              <ShieldAlert size={15} color="#ef4444" />
+                            </a>
+
+                            <a
+                              href={`https://axiom.trade/meme/${token.tokens.contract_address}?chain=sol`}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              title="Axiom Trade"
+                              style={{ display: 'flex', alignItems: 'center' }}
+                            >
+                              <img src="https://axiom.trade/axiom.svg" alt="Axiom" style={{ width: '15px', height: '15px' }} />
+                            </a>
+
+                            <a
+                              href={`https://fomo.family/tokens/solana/${token.tokens.contract_address}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              title="FOMO"
+                              style={{ display: 'flex', alignItems: 'center' }}
+                            >
+                              <img src="https://fomo.family/favicon.svg" alt="FOMO" style={{ width: '15px', height: '15px', borderRadius: '3px' }} onError={(e) => { e.currentTarget.src = "https://fomo.family/favicon.ico"; }} />
+                            </a>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
@@ -2706,6 +2722,30 @@ function App() {
                           >
                             <img src="https://axiom.trade/axiom.svg" alt="Axiom" style={{ width: '14px', height: '14px' }} />
                             Axiom
+                          </a>
+                          <a
+                            href={`https://fomo.family/tokens/solana/${token.tokens.contract_address}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            title="FOMO"
+                            style={{
+                              padding: '6px 12px',
+                              background: 'rgba(255,100,50,0.06)',
+                              border: '1px solid rgba(255,100,50,0.25)',
+                              borderRadius: '6px',
+                              color: '#ff7a30',
+                              fontSize: '0.75rem',
+                              fontWeight: 600,
+                              textDecoration: 'none',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              flexShrink: 0
+                            }}
+                          >
+                            <img src="https://fomo.family/favicon.svg" alt="FOMO" style={{ width: '14px', height: '14px', borderRadius: '3px' }} onError={(e) => { e.currentTarget.src = "https://fomo.family/favicon.ico"; }} />
+                            FOMO
                           </a>
                           <a
                             href={`https://solscan.io/token/${token.tokens.contract_address}#holders`}
