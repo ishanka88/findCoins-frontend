@@ -1956,10 +1956,14 @@ function App() {
                             const total = tfData?.makers ?? (b + s || (makersTimeframe === 'h24' ? (token.makers || 0) : 0));
                             const tfLabel = makersTimeframe.toUpperCase();
 
+                            const buyVol = (makersTimeframe === 'h24' && token.buy_volume_h24 != null) ? Number(token.buy_volume_h24) : null;
+                            const sellVol = (makersTimeframe === 'h24' && token.sell_volume_h24 != null) ? Number(token.sell_volume_h24) : null;
+                            const hasVol = buyVol != null || sellVol != null;
+
                             return (
                               <div
                                 style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}
-                                title={`${tfLabel} Activity: ${formatNumber(total)} Traders (${formatNumber(b)} Buyers, ${formatNumber(s)} Sellers) | ${formatNumber(buys + sells)} Orders (${formatNumber(buys)} Buys, ${formatNumber(sells)} Sells)`}
+                                title={`${tfLabel} Activity: ${formatNumber(total)} Traders (${formatNumber(b)} Buyers, ${formatNumber(s)} Sellers) | ${formatNumber(buys + sells)} Orders (${formatNumber(buys)} Buys, ${formatNumber(sells)} Sells)${hasVol ? ` | Vol: ${formatMcap(buyVol)} Buys, ${formatMcap(sellVol)} Sells` : ''}`}
                               >
                                 <div style={{ fontSize: '0.92rem', fontWeight: 600, color: '#f4f4f5', display: 'flex', alignItems: 'center', gap: '5px' }}>
                                   <span title={`${formatNumber(total)} unique makers/traders`}>{formatNumber(total)}</span>
@@ -1971,21 +1975,31 @@ function App() {
                                     </span>
                                   )}
                                 </div>
-                                {(buys > 0 || sells > 0) ? (
+                                {hasVol ? (
+                                  <div style={{ fontSize: '0.7rem', color: '#71717a', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <span style={{ color: '#10b981', fontWeight: 500 }} title={`${formatNumber(buys)} buy orders (${formatMcap(buyVol)})`}>
+                                      {formatMcap(buyVol)} Buys
+                                    </span>
+                                    <span style={{ color: '#3f3f46' }}>•</span>
+                                    <span style={{ color: '#ef4444', fontWeight: 500 }} title={`${formatNumber(sells)} sell orders (${formatMcap(sellVol)})`}>
+                                      {formatMcap(sellVol)} Sells
+                                    </span>
+                                  </div>
+                                ) : (buys > 0 || sells > 0) ? (
                                   <div style={{ fontSize: '0.7rem', color: '#71717a', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                     <span style={{ color: '#10b981', fontWeight: 500 }} title={`${formatNumber(buys)} buy orders`}>
-                                      {formatNumber(buys)} Buys
+                                      ${formatNumber(buys)} Buys
                                     </span>
                                     <span style={{ color: '#3f3f46' }}>•</span>
                                     <span style={{ color: '#ef4444', fontWeight: 500 }} title={`${formatNumber(sells)} sell orders`}>
-                                      {formatNumber(sells)} Sells
+                                      ${formatNumber(sells)} Sells
                                     </span>
                                   </div>
                                 ) : (b > 0 || s > 0) ? (
                                   <div style={{ fontSize: '0.68rem', color: '#71717a', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                    <span style={{ color: '#10b981' }}>B:{formatNumber(b)}</span>
+                                    <span style={{ color: '#10b981' }}>B:${formatNumber(b)}</span>
                                     <span style={{ color: '#3f3f46' }}>•</span>
-                                    <span style={{ color: '#ef4444' }}>S:{formatNumber(s)}</span>
+                                    <span style={{ color: '#ef4444' }}>S:${formatNumber(s)}</span>
                                   </div>
                                 ) : null}
                               </div>
